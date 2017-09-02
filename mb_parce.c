@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 #include "defs.h"
 #include "kernel.h"
 #include "physpgalloc.h"
@@ -146,7 +144,7 @@ area_parse(struct mb_mmap *area, size_t mmap_length,
 */
 	*buflen = j;
 
-	sort(buf, *buflen, sizeof(void *), area_cmp);
+	sort(buf, *buflen, sizeof(void *), (void *)area_cmp);
 
 	for (i = 0; i < *buflen; i++) {
 		iprintf("\tbeg = 0x");

@@ -1,8 +1,6 @@
 #ifndef   _PHYSPGALLOC_H_
 #define   _PHYSPGALLOC_H_
 
-#include <stdint.h>
-
 #include "defs.h"
 #include "mb_parce.h"
 

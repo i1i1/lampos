@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 #include "sort.h"
 #include "defs.h"
 
@@ -18,7 +16,8 @@ swap(void *a, void *b, size_t size)
 }
 
 void
-sort(void *base, size_t nmeb, size_t size, int (*cmp)(const void *, const void *))
+sort(void *base, size_t nmeb, size_t size, \
+			int (*cmp)(const void *, const void *))
 {
 	char *arr;
 	size_t i, j, idx;

@@ -21,9 +21,13 @@
 #define USER_CODE	0x18
 #define USER_DATA	0x20
 
-#define GET_BIT(n, off)		((n >> off) & 1)
-#define SET_BIT(n, off)		do { n = n |  (1 << off); } while(0);
-#define CLR_BIT(n, off)		do { n = n & ~(1 << off); } while(0);
+#ifndef	NULL
+	#define	NULL	(void *)0
+#endif
+
+#define GET_BIT(n, off)		(((n) >> (off)) & 1)
+#define SET_BIT(n, off)		do { (n) = (n) |  (1 << (off)); } while(0);
+#define CLR_BIT(n, off)		do { (n) = (n) & ~(1 << (off)); } while(0);
 #define SWAP(a, b)		do {			\
 					typeof(a) c;	\
 					c = a;		\

@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 #include "defs.h"
 #include "kernel.h"
 #include "mb_parce.h"
@@ -15,12 +13,14 @@
 #define PGDIR_ALLOCATED		(1 << 9)
 
 
-size_t pagedir[1024] __attribute__ ((aligned(4096)));
-size_t pagetables[1024][1024] __attribute__ ((aligned(4096)));
+size_t pagedir[1024] __attribute__ ((aligned(4096))) = {0};
+size_t pagetables[1024][1024] __attribute__ ((aligned(4096))) = {{0}};
 int diridx;
 
 
+extern uint32_t endkernel;
 extern void en_pg(size_t *);
+
 
 physaddr_t
 physpgalloc()
@@ -35,7 +35,8 @@ physpgalloc()
 		pageaddr = (size_t *)(pagedir[i] & 0xfffff000);
 
 		for (j = 0; j < 1024; j++) {
-			if (!(pageaddr[j] & PGDIR_ALLOCATED))
+			if (pageaddr[j] & PGDIR_ALLOCATED ||
+					!(pageaddr[j] & PGDIR_PRESENT))
 				continue;
 
 			pageaddr[j] |= PGDIR_ALLOCATED;
@@ -80,10 +81,11 @@ physpginit(struct area **buf, int buflen)
 	for (i = 0; i < 0x800000; i += 0x1000)
 		pagemap(i, i, PGDIR_PRESENT + PGDIR_RW + PGDIR_ALLOCATED);
 
-	for (; i <= buf[buflen - 1]->end - 0x1000; i += 0x1000)
+	for (; i < (buf[buflen - 1]->end & 0xfffff000); i += 0x1000)
 		pagemap(i, i, PGDIR_PRESENT + PGDIR_RW);
 
 	en_pg(pagedir);
+
 	iprintf("\tHELLO PAGING WORLD\n");
 }
 
