@@ -3,7 +3,7 @@
 #include "com.h"
 #include "defs.h"
 #include "mb_parce.h"
-#include "alloc.h"
+#include "kalloc.h"
 
 #define VERSION_MAJOR	0
 #define VERSION_MINOR	1
@@ -24,7 +24,10 @@ main(size_t eax, void *multiboot)
 	com_init(COM1_PORT_ADDRESS);
 	com_init(COM2_PORT_ADDRESS);
 	segm_init();
+
+	/* initialising physpage allocator and enable paging */
 	mb_parse(multiboot);
+
 	kalloc_init();
 	kalloc_info();
 

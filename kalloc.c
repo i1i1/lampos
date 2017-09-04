@@ -1,5 +1,5 @@
 #include "kernel.h"
-#include "alloc.h"
+#include "kalloc.h"
 #include "physpgalloc.h"
 
 /* First fit heap allocator */
@@ -40,14 +40,18 @@ kfree(void *ptr)
 	struct alloc_area_t *prev, *cur;
 
 	prev = heap_beg;
+	cur = NEXT_AREA(prev);
 
 	if (prev + 1 == ptr) {
 		prev->flag = 0;
+
+		if (cur->flag == 0)
+			prev->size += cur->size;
+
 		return;
 	}
 
-	for (cur = NEXT_AREA(prev); cur != heap_end; prev = cur,
-						cur = NEXT_AREA(cur)) {
+	for (; cur != heap_end; prev = cur, cur = NEXT_AREA(cur)) {
 		if (cur + 1 != ptr)
 			continue;
 
@@ -65,7 +69,6 @@ kfree(void *ptr)
 
 		return;
 	}
-	iprintf("in free\n");
 }
 
 void
@@ -81,18 +84,18 @@ kalloc_info()
 			used += i->size;
 
 	iprintf("\nKERNEL ALLOCATOR INFO:\n");
-	iprintf("\ttotal:\t0x%x bytes\n", heap_end - heap_beg);
-	iprintf("\tfree:\t0x%x bytes\n", heap_end - heap_beg - used);
+	iprintf("\ttotal:\t0x%x bytes\n", (size_t)heap_end - (size_t)heap_beg);
+	iprintf("\tfree:\t0x%x bytes\n", (size_t)heap_end - (size_t)heap_beg - used);
 	iprintf("\tused:\t0x%x bytes\n", used);
 	iprintf("\theap begins at\t0x%08x\n", heap_beg);
-	iprintf("\theap ends at  \t0x%08x\n", heap_end);
+	iprintf("\theap ends at  \t0x%08x\n\n", heap_end);
 }
 
 void
 kalloc_init()
 {
 	heap_beg = (void *)physpgalloc();
-	heap_end = heap_beg + 0x1000;
+	heap_end = (void *)((char *)heap_beg + 0x1000);
 
 	heap_beg->size = (size_t)heap_end - (size_t)heap_beg;
 	heap_beg->flag = 0;

@@ -4,8 +4,8 @@ GENISOIMAGE = genisoimage
 CC = i586-elf-gcc
 CFLAGS = -O3 -Wall -I./include
 sources = main.c vga.c libk.c ioport.c printf.c segm.c physpgalloc.c sort.c \
-	mb_parce.c com.c alloc.c
-headers = vga.h physpgalloc.h sort.h mb_parce.h com.h alloc.h
+	mb_parce.c com.c kalloc.c
+headers = vga.h physpgalloc.h sort.h mb_parce.h com.h kalloc.h
 obj = $(sources:.c=.o)
 objects = $(addprefix build/object/, $(obj))
 

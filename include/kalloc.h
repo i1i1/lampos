@@ -4,7 +4,7 @@
 #include "defs.h"
 
 
-#define NEXT_AREA(a)	(struct alloc_area_t *)((size_t)(a) + (a)->size)
+#define NEXT_AREA(a)	((struct alloc_area_t *)((size_t)(a) + (a)->size))
 
 
 struct alloc_area_t {

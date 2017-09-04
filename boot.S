@@ -39,7 +39,7 @@ _start:
 
 	call	main
 
-	add	$12,	%esp
+	add	$8,	%esp
 
 	/*
 	 * Disable interrupts and halt the CPU.
