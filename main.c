@@ -4,6 +4,7 @@
 #include "defs.h"
 #include "mb_parce.h"
 #include "kalloc.h"
+#include "buddyalloc.h"
 
 #define VERSION_MAJOR	0
 #define VERSION_MINOR	1
@@ -28,8 +29,8 @@ main(size_t eax, void *multiboot)
 	/* initialising physpage allocator and enable paging */
 	mb_parse(multiboot);
 
-	kalloc_init();
-	kalloc_info();
+	balloc_init();
+	balloc_info();
 
 	iprintf("\tkernel ends at 0x%08x\n", &endkernel);
 

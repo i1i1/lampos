@@ -5,27 +5,27 @@
 /* First fit heap allocator */
 
 
-struct alloc_area_t *heap_beg;
-struct alloc_area_t *heap_end;
+struct alloc_area *heap_beg;
+struct alloc_area *heap_end;
 
 
 void *
 kalloc(size_t size)
 {
-	struct alloc_area_t *cur;
+	struct alloc_area *cur;
 
-	for (cur = heap_beg; cur != heap_end; cur = NEXT_AREA(cur)){
+	for (cur = heap_beg; cur != heap_end; cur = NEXT_ALLOC_AREA(cur)) {
 		if (cur->flag)
 			continue;
 
-		if (cur->size - sizeof(struct alloc_area_t) * 2 < size)
+		if (cur->size - sizeof(struct alloc_area) * 2 < size)
 			continue;
 
-		cur->size -= size + sizeof(struct alloc_area_t);
+		cur->size -= size + sizeof(struct alloc_area);
 
-		cur = NEXT_AREA(cur);
+		cur = NEXT_ALLOC_AREA(cur);
 
-		cur->size = size + sizeof(struct alloc_area_t);
+		cur->size = size + sizeof(struct alloc_area);
 		cur->flag = 1;
 
 		return cur + 1;
@@ -37,10 +37,10 @@ kalloc(size_t size)
 void
 kfree(void *ptr)
 {
-	struct alloc_area_t *prev, *cur;
+	struct alloc_area *prev, *cur;
 
 	prev = heap_beg;
-	cur = NEXT_AREA(prev);
+	cur = NEXT_ALLOC_AREA(prev);
 
 	if (prev + 1 == ptr) {
 		prev->flag = 0;
@@ -51,7 +51,7 @@ kfree(void *ptr)
 		return;
 	}
 
-	for (; cur != heap_end; prev = cur, cur = NEXT_AREA(cur)) {
+	for (; cur != heap_end; prev = cur, cur = NEXT_ALLOC_AREA(cur)) {
 		if (cur + 1 != ptr)
 			continue;
 
@@ -62,7 +62,7 @@ kfree(void *ptr)
 
 		cur->flag = 0;
 		prev = cur;
-		cur = NEXT_AREA(prev);
+		cur = NEXT_ALLOC_AREA(prev);
 
 		if (cur != heap_end && cur->flag == 0)
 			prev->size += cur->size;
@@ -75,11 +75,11 @@ void
 kalloc_info()
 {
 	size_t used;
-	struct alloc_area_t *i;
+	struct alloc_area *i;
 
 	used = 0;
 
-	for (i = heap_beg; i != heap_end; i = NEXT_AREA(i))
+	for (i = heap_beg; i != heap_end; i = NEXT_ALLOC_AREA(i))
 		if (i->flag)
 			used += i->size;
 

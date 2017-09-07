@@ -78,7 +78,7 @@ physpginit(struct area **buf, int buflen)
 
 	diridx = 0;
 
-	for (i = 0; i < 0x800000; i += 0x1000)
+	for (i = 0; i < 0x1000000; i += 0x1000)
 		pagemap(i, i, PGDIR_PRESENT + PGDIR_RW + PGDIR_ALLOCATED);
 
 	for (; i < (buf[buflen - 1]->end & 0xfffff000); i += 0x1000)
