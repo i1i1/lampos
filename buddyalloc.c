@@ -6,13 +6,50 @@
 struct buddy_lst *buddies[MAXBUDDY + 1] = {NULL};
 
 
-/* Helper that finds buddy at 'addr' with flag = 'flag'
+/* Function that finds buddy at 'addr' with flag = 'flag'
  * with minimum power = 'initpow'.
  * If 'addr' = 0 then all addreses match.
  * The result will be in '.next'.
- * If noone match then '.next' == NULL
+ * If noone matches then '.next' == NULL.
  */
-struct _findnode findbuddy(struct buddy_lst *addr, int initpow, int flag);
+struct _findnode
+findbuddy(struct buddy_lst *addr, int initpow, int flag)
+{
+	struct buddy_lst *prev, *cur, *next;
+	int i;
+
+	for (i = 0; i <= MAXBUDDY; i++) {
+		/* If no elements in list */
+		if (buddies[i] == NULL)
+			continue;
+
+		/* If buddies[i] matches */
+		if (buddies[i]->flag == flag &&\
+				(addr == NULL || buddies[i] == addr)) {
+			prev = NULL;
+			cur = NULL;
+			next = buddies[i];
+			goto found;
+		}
+
+		/* If 1 elements in list */
+		if (buddies[i]->next == NULL)
+			continue;
+
+		prev = NULL;
+		cur = buddies[i];
+		next = cur->next;
+
+		for (; next != NULL; prev = cur, cur = next, next = next->next)
+			if (next->flag == flag && (addr == NULL || next == addr))
+				goto found;
+	}
+
+	/* Didnt found */
+	return (struct _findnode) { NULL, NULL, NULL, 0 };
+found:
+	return (struct _findnode) { prev, cur, next, i };
+}
 
 int
 mergeable(struct buddy_lst *a, struct buddy_lst *b, int power)
@@ -120,14 +157,17 @@ balloc(size_t size)
 
 	res = findbuddy(NULL, pow, 0);
 
+	/* If didnt find empty space */
 	if (res.next == NULL)
 		return NULL;
 
+	/* If list begins with found node */
 	if (res.cur == NULL)
 		buddies[res.power] = res.next->next;
 	else
 		res.cur->next = res.next->next;
 
+	/* Dividing node */
 	for (; res.power > pow; res.power--)
 		addbuddy((void *)((uint8_t *)(res.next) + (1 << (res.power - 1))),\
 					res.power - 1, 0);
@@ -150,18 +190,22 @@ bfree(void *p)
 
 	res = findbuddy(ptr, 0, 1);
 
+	/* If didnt find buddy marked by 'ptr' */
 	if (res.next == NULL)
 		return;
 
+	/* If '.cur' and '.next' can be merged */
 	if (res.cur != NULL && res.cur->flag == 0 && mergeable(res.cur, res.next, res.power)) {
 		if (res.prev == NULL)
 			buddies[res.power] = res.next->next;
 		else
 			res.prev->next = res.next->next;
+
 		addbuddy(res.cur, res.power + 1, 0);
 		return;
 	}
 
+	/* If '.next' and '.next->next' can be merged */
 	if (res.next->next != NULL && res.next->next->flag == 0\
 			&& mergeable(res.next, res.next->next, res.power)) {
 		if (res.prev == NULL)
@@ -175,47 +219,12 @@ bfree(void *p)
 	res.next->flag = 0;
 }
 
-struct _findnode
-findbuddy(struct buddy_lst *addr, int initpow, int flag)
-{
-	struct buddy_lst *prev, *cur, *next;
-	int i;
-
-	for (i = 0; i <= MAXBUDDY; i++) {
-		if (buddies[i] == NULL)
-			continue;
-
-		if (buddies[i]->flag == flag &&\
-				(addr == NULL || buddies[i] == addr)) {
-			prev = NULL;
-			cur = NULL;
-			next = buddies[i];
-			goto found;
-		}
-
-		if (buddies[i]->next == NULL)
-			continue;
-
-		prev = NULL;
-		cur = buddies[i];
-		next = cur->next;
-
-		for (; next != NULL; prev = cur, cur = next, next = next->next)
-			if (next->flag == flag && (addr == NULL || next == addr))
-				goto found;
-	}
-
-	return (struct _findnode){NULL, NULL, NULL, 0};
-found:
-	return (struct _findnode){prev, cur, next, i};
-}
-
 void
 balloc_info()
 {
 	struct buddy_lst *node;
 	int i;
-	size_t free, used;
+	size_t free, used, total;
 
 	free = used = 0;
 
@@ -223,24 +232,27 @@ balloc_info()
 
 	for (i = 0; i <= MAXBUDDY; i++)
 		for (node = buddies[i]; node != NULL; node = node->next) {
-			iprintf("\tnode 0x%x; flag = %d; power = %d\n", node, node->flag, i);
+			iprintf("\tnode 0x%x; flag = %d; size = 0x%x; power = %d\n", node, node->flag, 1 << i, i);
 			if (node->flag)
 				used += 1 << i;
 			else
 				free += 1 << i;
 		}
 
-	iprintf("\n\ttotal:\t%d kilobytes\n", (free + used) / 1024);
-	iprintf("\tfree:\t%d kilobytes\n", free / 1024);
-	iprintf("\tused:\t%d kilobytes\n\n", used / 1024);
+	total = used + free;
+
+	iprintf("\n\ttotal:\t%d Gb %d Mb %d Kb %d bytes\n", total >> 30,\
+		(total >> 20) % 1024, (total >> 10) % 1024, total % 1024);
+	iprintf("\tfree:\t%d Gb %d Mb %d Kb %d bytes\n", free >> 30,\
+			(free >> 20) % 1024, (free >> 10) % 1024, free % 1024);
+	iprintf("\tused:\t%d Gb %d Mb %d Kb %d bytes\n", used >> 30,\
+			(used >> 20) % 1024, (used >> 10) % 1024, used % 1024);
 }
 
 void
-balloc_init()
+balloc_init(int numpages)
 {
-	int i;
-
-	for (i = 0; i < 0x100; i++)
+	for (; numpages != 0; numpages--)
 		addbuddy((void *)physpgalloc(), 12, 0);
 }
 

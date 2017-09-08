@@ -26,10 +26,11 @@ main(size_t eax, void *multiboot)
 	com_init(COM2_PORT_ADDRESS);
 	segm_init();
 
-	/* initialising physpage allocator and enable paging */
+	/* Initialising physpage allocator and enable paging */
 	mb_parse(multiboot);
 
-	balloc_init();
+	/* Allocating 8 * 1024 * 4 Kilobytes to allocator */
+	balloc_init(8 * 1024);
 	balloc_info();
 
 	iprintf("\tkernel ends at 0x%08x\n", &endkernel);

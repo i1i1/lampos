@@ -4,7 +4,7 @@
 #include "defs.h"
 
 /* Maximum power of buddy */
-#define MAXBUDDY	20
+#define MAXBUDDY	30
 
 
 struct buddy_lst {
@@ -23,7 +23,7 @@ struct _findnode {
 void *balloc(size_t size);
 void bfree(void *ptr);
 void balloc_info();
-void balloc_init();
+void balloc_init(int numpages);
 
 
 #endif /* _BUDDYALLOC_H_ */
