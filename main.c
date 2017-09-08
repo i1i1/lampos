@@ -10,7 +10,7 @@
 #define VERSION_MINOR	1
 
 
-extern uint32_t endkernel;
+extern char etext, edata, end;
 
 
 extern void segm_init();
@@ -33,7 +33,9 @@ main(size_t eax, void *multiboot)
 	balloc_init(8 * 1024);
 	balloc_info();
 
-	iprintf("\tkernel ends at 0x%08x\n", &endkernel);
+	iprintf("\ttext ends at 0x%08x\n", &etext);
+	iprintf("\tdata ends at 0x%08x\n", &edata);
+	iprintf("\tbss and kernel ends at 0x%08x\n", &end);
 
 /*
 	char c;
