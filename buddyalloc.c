@@ -5,6 +5,15 @@
 
 struct buddy_lst *buddies[MAXBUDDY + 1] = {NULL};
 
+
+/* Helper that finds buddy at 'addr' with flag = 'flag'
+ * with minimum power = 'initpow'.
+ * If 'addr' = 0 then all addreses match.
+ * The result will be in '.next'.
+ * If noone match then '.next' == NULL
+ */
+struct _findnode findbuddy(struct buddy_lst *addr, int initpow, int flag);
+
 int
 mergeable(struct buddy_lst *a, struct buddy_lst *b, int power)
 {
@@ -102,73 +111,86 @@ addbuddy(struct buddy_lst *addr, int power, int flag)
 void *
 balloc(size_t size)
 {
-	struct buddy_lst *prev, *cur;
-	int pow, i;
+	struct _findnode res;
+	int pow;
 
 	/* Finding minimum power for this size */
 	for (pow = 3; size > (1 << pow) - sizeof(struct buddy_lst); pow++)
 		;
 
-	/* Finding free area that fits */
-	for (i = pow; i <= MAXBUDDY; i++) {
-		if (buddies[i] == NULL)
-			continue;
+	res = findbuddy(NULL, pow, 0);
 
-		if (buddies[i]->flag == 0) {
-			prev = NULL;
-			cur = buddies[i];
-			buddies[i] = cur->next;
-			goto found_free;
-		}
+	if (res.next == NULL)
+		return NULL;
 
-		if (buddies[i]->next == NULL)
-			continue;
-
-		prev = buddies[i];
-		cur = prev->next;
-
-		for (; cur != NULL; prev = cur, cur = cur->next)
-			if (cur->flag == 0)
-				goto found_free;
-	}
-
-	/* If didnt found then return NULL */
-	return NULL;
-
-found_free:
-	if (prev == NULL)
-		buddies[i] = cur->next;
+	if (res.cur == NULL)
+		buddies[res.power] = res.next->next;
 	else
-		prev->next = cur->next;
+		res.cur->next = res.next->next;
 
-	for (; i > pow; i--)
-		addbuddy((void *)((uint8_t *)(cur) + (1 << (i - 1))), i - 1, 0);
-	addbuddy(cur, i, 1);
+	for (; res.power > pow; res.power--)
+		addbuddy((void *)((uint8_t *)(res.next) + (1 << (res.power - 1))),\
+					res.power - 1, 0);
 
-	return prev + 1;
+	addbuddy(res.next, res.power, 1);
+
+	return res.next + 1;
 }
 
 void
 bfree(void *p)
 {
-	struct buddy_lst *ptr, *prev, *cur, *next;
-	int i;
+	struct buddy_lst *ptr;
+	struct _findnode res;
 
-	if (p == NULL)
+	if (p == NULL || p == (void *)(sizeof(struct buddy_lst)))
 		return;
 
 	ptr = (void *)((char *)p - sizeof(struct buddy_lst));
 
-	/* Finding ptr in table of lists (result will be in 'next') */
+	res = findbuddy(ptr, 0, 1);
+
+	if (res.next == NULL)
+		return;
+
+	if (res.cur != NULL && res.cur->flag == 0 && mergeable(res.cur, res.next, res.power)) {
+		if (res.prev == NULL)
+			buddies[res.power] = res.next->next;
+		else
+			res.prev->next = res.next->next;
+		addbuddy(res.cur, res.power + 1, 0);
+		return;
+	}
+
+	if (res.next->next != NULL && res.next->next->flag == 0\
+			&& mergeable(res.next, res.next->next, res.power)) {
+		if (res.prev == NULL)
+			buddies[res.power] = NULL;
+		else
+			res.cur->next = res.next->next->next;
+		addbuddy(res.next, res.power + 1, 0);
+		return;
+	}
+
+	res.next->flag = 0;
+}
+
+struct _findnode
+findbuddy(struct buddy_lst *addr, int initpow, int flag)
+{
+	struct buddy_lst *prev, *cur, *next;
+	int i;
+
 	for (i = 0; i <= MAXBUDDY; i++) {
 		if (buddies[i] == NULL)
 			continue;
 
-		if (buddies[i] == ptr) {
+		if (buddies[i]->flag == flag &&\
+				(addr == NULL || buddies[i] == addr)) {
 			prev = NULL;
 			cur = NULL;
 			next = buddies[i];
-			goto found_node;
+			goto found;
 		}
 
 		if (buddies[i]->next == NULL)
@@ -179,35 +201,13 @@ bfree(void *p)
 		next = cur->next;
 
 		for (; next != NULL; prev = cur, cur = next, next = next->next)
-			if (next == ptr)
-				goto found_node;
+			if (next->flag == flag && (addr == NULL || next == addr))
+				goto found;
 	}
 
-	/* If didnt found then exit */
-	return;
-
-found_node:
-
-	if (cur != NULL && cur->flag == 0 && mergeable(cur, next, i)) {
-		if (prev == NULL)
-			buddies[i] = next->next;
-		else
-			prev->next = next->next;
-		addbuddy(cur, i + 1, 0);
-		return;
-	}
-
-	if (next->next != NULL && next->next->flag == 0\
-			&& mergeable(next, next->next, i)) {
-		if (prev == NULL)
-			buddies[i] = NULL;
-		else
-			cur->next = next->next->next;
-		addbuddy(next, i + 1, 0);
-		return;
-	}
-
-	next->flag = 0;
+	return (struct _findnode){NULL, NULL, NULL, 0};
+found:
+	return (struct _findnode){prev, cur, next, i};
 }
 
 void

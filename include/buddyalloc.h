@@ -12,6 +12,13 @@ struct buddy_lst {
 	uint8_t flag;
 } __attribute__((packed));
 
+struct _findnode {
+	struct buddy_lst *prev;
+	struct buddy_lst *cur;
+	struct buddy_lst *next;
+	int power;
+};
+
 
 void *balloc(size_t size);
 void bfree(void *ptr);
