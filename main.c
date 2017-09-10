@@ -3,7 +3,6 @@
 #include "com.h"
 #include "defs.h"
 #include "mb_parce.h"
-#include "kalloc.h"
 #include "buddyalloc.h"
 
 #define VERSION_MAJOR	0

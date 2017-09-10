@@ -98,9 +98,10 @@ addbuddy(struct buddy_lst *addr, int power, int flag)
 
 	/* If only 1 element in list */
 	if (cur == NULL) {
-		if (flag == 0 && prev->flag == 0 && mergeable(prev, addr, power)) {
+		if (flag != BUDDY_ALLOCATED && prev->flag == BUDDY_FREE &&\
+					mergeable(prev, addr, power)) {
 			buddies[power] = NULL;
-			addbuddy(MIN(prev, addr), power + 1, 0);
+			addbuddy(MIN(prev, addr), power + 1, flag);
 			return;
 		}
 
@@ -124,25 +125,51 @@ addbuddy(struct buddy_lst *addr, int power, int flag)
 		if (cur->next > addr)
 			break;
 
+	if (flag == BUDDY_ALLOCATED)
+		goto finalize;
+
 	/* Trying to merge with left one */
-	if (flag == 0 && cur->flag == 0 && mergeable(cur, addr, power)) {
+	if (cur->flag == BUDDY_FREE && mergeable(cur, addr, power)) {
 		prev->next = cur->next;
-		addbuddy(MIN(cur, addr), power + 1, 0);
+		addbuddy(MIN(cur, addr), power + 1, flag);
 		return;
 	}
 
 	/* Trying to merge with right one */
-	if (cur->next != NULL && flag == 0 && cur->next->flag == 0 &&\
+	if (cur->next != NULL && cur->next->flag == BUDDY_FREE &&\
 					mergeable(addr, cur->next, power)) {
 		cur->next = cur->next->next;
-		addbuddy(addr, power + 1, 0);
+		addbuddy(addr, power + 1, flag);
 		return;
 	}
 
+finalize:
 	/* Adding area to list */
 	addr->next = cur->next;
 	cur->next = addr;
 	addr->flag = flag;
+}
+
+/* Divides 'node.next' to the object with power = 'power',
+ * makes it allocated and returns it.
+ */
+struct buddy_lst *
+divide(struct _findnode node, int power)
+{
+	/* If list begins with node that will be divided */
+	if (node.cur == NULL)
+		buddies[node.power] = node.next->next;
+	else
+		node.cur->next = node.next->next;
+
+	/* Dividing node */
+	for (; node.power > power; node.power--)
+		addbuddy((void *)((uint8_t *)(node.next) + (1 << (node.power - 1))),\
+					node.power - 1, BUDDY_FREE);
+
+	addbuddy(node.next, node.power, BUDDY_ALLOCATED);
+
+	return node.next;
 }
 
 void *
@@ -155,26 +182,57 @@ balloc(size_t size)
 	for (pow = 3; size > (1 << pow) - sizeof(struct buddy_lst); pow++)
 		;
 
-	res = findbuddy(NULL, pow, 0);
+	res = findbuddy(NULL, pow, BUDDY_FREE);
 
 	/* If didnt find empty space */
 	if (res.next == NULL)
 		return NULL;
 
-	/* If list begins with found node */
+	return divide(res, pow) + 1;
+}
+
+void *
+brealloc(void *p, size_t size)
+{
+	struct buddy_lst *ptr;
+	struct _findnode res;
+	int pow, i;
+
+	if (p == NULL || p == (void *)(sizeof(struct buddy_lst)))
+		return NULL;
+
+	ptr = (void *)((char *)p - sizeof(struct buddy_lst));
+
+	res = findbuddy(ptr, 0, BUDDY_ALLOCATED);
+
+	/* If didnt find buddy marked by 'ptr' */
+	if (res.next == NULL)
+		return balloc(size);
+
 	if (res.cur == NULL)
 		buddies[res.power] = res.next->next;
 	else
 		res.cur->next = res.next->next;
 
-	/* Dividing node */
-	for (; res.power > pow; res.power--)
-		addbuddy((void *)((uint8_t *)(res.next) + (1 << (res.power - 1))),\
-					res.power - 1, 0);
 
-	addbuddy(res.next, res.power, 1);
+	addbuddy(res.next, res.power, BUDDY_REALLOCATED);
+	pow = res.power;
+	res = findbuddy(res.next, res.power, BUDDY_REALLOCATED);
 
-	return res.next + 1;
+	if (size > (1 << res.power) - sizeof(struct buddy_lst)) {
+		res.next->flag = BUDDY_FREE;
+		divide(res, pow);
+		return NULL;
+	}
+
+	/* Finding minimum power for this size */
+	for (i = 3; size > (1 << i) - sizeof(struct buddy_lst); i++)
+		;
+
+	ptr = divide(res, i) + 1;
+	memcpy(ptr, p, (1 << MIN(i, pow)) - sizeof(struct buddy_lst));
+
+	return ptr;
 }
 
 void
@@ -188,35 +246,36 @@ bfree(void *p)
 
 	ptr = (void *)((char *)p - sizeof(struct buddy_lst));
 
-	res = findbuddy(ptr, 0, 1);
+	res = findbuddy(ptr, 0, BUDDY_ALLOCATED);
 
 	/* If didnt find buddy marked by 'ptr' */
 	if (res.next == NULL)
 		return;
 
 	/* If '.cur' and '.next' can be merged */
-	if (res.cur != NULL && res.cur->flag == 0 && mergeable(res.cur, res.next, res.power)) {
+	if (res.cur != NULL && res.cur->flag == BUDDY_FREE &&\
+				mergeable(res.cur, res.next, res.power)) {
 		if (res.prev == NULL)
 			buddies[res.power] = res.next->next;
 		else
 			res.prev->next = res.next->next;
 
-		addbuddy(res.cur, res.power + 1, 0);
+		addbuddy(res.cur, res.power + 1, BUDDY_FREE);
 		return;
 	}
 
 	/* If '.next' and '.next->next' can be merged */
-	if (res.next->next != NULL && res.next->next->flag == 0\
+	if (res.next->next != NULL && res.next->next->flag == BUDDY_FREE\
 			&& mergeable(res.next, res.next->next, res.power)) {
 		if (res.prev == NULL)
 			buddies[res.power] = NULL;
 		else
 			res.cur->next = res.next->next->next;
-		addbuddy(res.next, res.power + 1, 0);
+		addbuddy(res.next, res.power + 1, BUDDY_FREE);
 		return;
 	}
 
-	res.next->flag = 0;
+	res.next->flag = BUDDY_FREE;
 }
 
 void
@@ -232,7 +291,8 @@ balloc_info()
 
 	for (i = 0; i <= MAXBUDDY; i++)
 		for (node = buddies[i]; node != NULL; node = node->next) {
-			iprintf("\tnode 0x%x; flag = %d; size = 0x%x; power = %d\n", node, node->flag, 1 << i, i);
+			iprintf("\tnode 0x%x; flag = %d; size = 0x%x; power = %d\n",\
+					node, node->flag, 1 << i, i);
 			if (node->flag)
 				used += 1 << i;
 			else
@@ -253,6 +313,6 @@ void
 balloc_init(int numpages)
 {
 	for (; numpages != 0; numpages--)
-		addbuddy((void *)physpgalloc(), 12, 0);
+		addbuddy((void *)physpgalloc(), 12, BUDDY_FREE);
 }
 
