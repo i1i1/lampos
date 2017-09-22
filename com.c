@@ -34,8 +34,6 @@ com_fifo_empty(uint16_t port)
 int
 com_getc(uint16_t port)
 {
-	//if (com_fifo_empty(port))
-	//	return '\0';
 	while (com_fifo_empty(port))
 		;
 

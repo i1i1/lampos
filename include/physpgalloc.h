@@ -9,9 +9,8 @@ typedef size_t vaddr_t;
 
 
 size_t physpgalloc();
-
 void physpgfree(size_t page);
-
+void physpginfo();
 void physpginit(struct area **buf, int buflen);
 
 

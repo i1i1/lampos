@@ -60,6 +60,42 @@ physpgfree(physaddr_t page)
 }
 
 void
+physpginfo()
+{
+	size_t free, used, total;
+	size_t *pageaddr;
+	int i, j;
+
+	free = used = 0;
+
+	for (i = 0; i < 1024; i++) {
+		if (!(pagedir[i] & PGDIR_PRESENT))
+			continue;
+
+		pageaddr = (size_t *)(pagedir[i] & 0xfffff000);
+
+		for (j = 0; j < 1024; j++) {
+			if (pageaddr[j] & PGDIR_PRESENT) {
+				if (pageaddr[j] & PGDIR_ALLOCATED)
+					used += 0x1000;
+				else
+					free += 0x1000;
+			}
+		}
+	}
+
+	total = used + free;
+
+	iprintf("\n\nPHYSPAGE ALLOCATOR INFO:\n");
+	iprintf("\ttotal:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n", total >> 30,\
+		(total >> 20) % 1024, (total >> 10) % 1024, total % 1024);
+	iprintf("\tfree:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n", free >> 30,\
+			(free >> 20) % 1024, (free >> 10) % 1024, free % 1024);
+	iprintf("\tused:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n\n", used >> 30,\
+			(used >> 20) % 1024, (used >> 10) % 1024, used % 1024);
+}
+
+void
 pagemap(physaddr_t phys, vaddr_t virt, size_t flags)
 {
 	size_t *pageaddr;
@@ -78,9 +114,11 @@ physpginit(struct area **buf, int buflen)
 
 	diridx = 0;
 
+	/* Mapping first 16 Mb as if they were allocated */
 	for (i = 0; i < 0x1000000; i += 0x1000)
 		pagemap(i, i, PGDIR_PRESENT + PGDIR_RW + PGDIR_ALLOCATED);
 
+	/* Mapping all other memory */
 	for (; i < (buf[buflen - 1]->end & 0xfffff000); i += 0x1000)
 		pagemap(i, i, PGDIR_PRESENT + PGDIR_RW);
 

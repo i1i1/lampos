@@ -1,6 +1,8 @@
 #ifndef _MBPARCE_H_
 #define _MBPARCE_H_
 
+#include <defs.h>
+
 
 struct mb_info {
 	/* flags indicate validations of next fields */
@@ -50,8 +52,6 @@ struct mb_info {
 
 	/* name of bootloader, C like string */
 	char *bootloader;
-
-	/* TODO: add more fields */
 };
 
 struct mb_mmap {

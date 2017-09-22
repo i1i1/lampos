@@ -3,6 +3,7 @@
 #include "com.h"
 #include "defs.h"
 #include "mb_parce.h"
+#include "physpgalloc.h"
 #include "buddyalloc.h"
 
 #define VERSION_MAJOR	0
@@ -28,7 +29,8 @@ main(size_t eax, void *multiboot)
 	/* Initialising physpage allocator and enable paging */
 	mb_parse(multiboot);
 
-	/* Allocating 8 * 1024 * 4 Kilobytes to allocator */
+	/* Allocating 8 * 1024 Pages(32 MB total) to allocator */
+	physpginfo();
 	balloc_init(8 * 1024);
 	balloc_info();
 
@@ -54,7 +56,5 @@ main(size_t eax, void *multiboot)
 //	iprintf("\n\tHello, kernel world!\n\n");
 
 	vga_move_hardware_cursor(81, 25);
-
-	for (;;);
 }
 

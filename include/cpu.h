@@ -1,6 +1,7 @@
 #ifndef _CPU_H_
 #define _CPU_H_
 
+#include <defs.h>
 
 #define GDT_PRIVL0	0x0
 #define GDT_PRIVL1	0x1
@@ -33,9 +34,6 @@ struct gdt_entry {
 	uint32_t	base_high : 8;
 } __attribute__ ((packed));
 
-struct tss_struct {
-
-} __attribute__ ((packed));
 
 #endif	/* _CPU_H_ */
 

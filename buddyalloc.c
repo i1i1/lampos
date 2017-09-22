@@ -18,7 +18,7 @@ findbuddy(struct buddy_lst *addr, int initpow, int flag)
 	struct buddy_lst *prev, *cur, *next;
 	int i;
 
-	for (i = 0; i <= MAXBUDDY; i++) {
+	for (i = initpow; i <= MAXBUDDY; i++) {
 		/* If no elements in list */
 		if (buddies[i] == NULL)
 			continue;
@@ -291,7 +291,7 @@ balloc_info()
 
 	for (i = 0; i <= MAXBUDDY; i++)
 		for (node = buddies[i]; node != NULL; node = node->next) {
-			iprintf("\tnode 0x%x; flag = %d; size = 0x%x; power = %d\n",\
+			iprintf("\tnode 0x%08x; flag = %d; size = 0x%08x; power = %d\n",\
 					node, node->flag, 1 << i, i);
 			if (node->flag)
 				used += 1 << i;
@@ -301,11 +301,11 @@ balloc_info()
 
 	total = used + free;
 
-	iprintf("\n\ttotal:\t%d Gb %d Mb %d Kb %d bytes\n", total >> 30,\
+	iprintf("\n\ttotal:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n", total >> 30,\
 		(total >> 20) % 1024, (total >> 10) % 1024, total % 1024);
-	iprintf("\tfree:\t%d Gb %d Mb %d Kb %d bytes\n", free >> 30,\
+	iprintf("\tfree:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n", free >> 30,\
 			(free >> 20) % 1024, (free >> 10) % 1024, free % 1024);
-	iprintf("\tused:\t%d Gb %d Mb %d Kb %d bytes\n", used >> 30,\
+	iprintf("\tused:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n\n", used >> 30,\
 			(used >> 20) % 1024, (used >> 10) % 1024, used % 1024);
 }
 
