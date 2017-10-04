@@ -2,7 +2,7 @@ KERNEL_LD = build/link-kernel.ld
 STAGE2 = build/stage2_eltorito
 GENISOIMAGE = genisoimage
 CC = i586-elf-gcc
-CFLAGS = -O3 -Wall -Wextra -I./include
+CFLAGS = -O3 -Wall -Wextra -I./include -nostdlib -ffreestanding -m32
 
 sources = main.c vga.c libk.c ioport.c printf.c segm.c physpgalloc.c sort.c \
 	mb_parce.c com.c buddyalloc.c
@@ -17,7 +17,7 @@ premake:
 	mkdir -p build/object/
 
 test: all
-	qemu-system-i386 -kernel boot.bin -m 1G -nographic &
+	qemu-system-i386 -kernel boot.bin -m 128M -nographic &
 	sleep 2
 	kill `pidof qemu-system-i386|cut -d' ' -f1`
 
@@ -29,7 +29,7 @@ build/object/%.o: %.c
 	$(CC) $(CFLAGS) -c -T $(KERNEL_LD) -nostdlib -ffreestanding -o $@ $<
 
 boot.bin: boot.S $(objects)
-	$(CC) $(CFLAGS) -T $(KERNEL_LD) -nostdlib -ffreestanding -o $@ $^ -lgcc
+	$(CC) $(CFLAGS) -T $(KERNEL_LD) -o $@ $^ -lgcc
 
 boot.iso: boot.bin
 	mkdir -p iso/boot/grub

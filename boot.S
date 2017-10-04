@@ -23,7 +23,7 @@ kernel_stack:
 .global cli
 .global sti
 .global load_gdt
-.global en_pg
+.global pgenable
 
 .type	_start,	@function
 _start:
@@ -81,8 +81,8 @@ load_gdt:
 	mov	%eax,	%ss
 	ret
 
-.type	en_pg	@function
-en_pg:
+.type	pgenable	@function
+pgenable:
 	movl    0x4(%esp), %eax
 	mov	%eax, %cr3
 

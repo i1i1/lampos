@@ -11,7 +11,7 @@ typedef size_t vaddr_t;
 size_t physpgalloc();
 void physpgfree(size_t page);
 void physpginfo();
-void physpginit(struct area **buf, int buflen);
+void physpginit(struct mb_area **mmap, int mmap_len);
 
 
 #endif /* _PHYSPGALLOC_H_ */

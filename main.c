@@ -17,7 +17,7 @@ extern void segm_init();
 
 
 void
-main(size_t eax, void *multiboot)
+main(size_t eax, void *mb)
 {
 	cli();
 
@@ -27,7 +27,7 @@ main(size_t eax, void *multiboot)
 	segm_init();
 
 	/* Initialising physpage allocator and enable paging */
-	mb_parse(multiboot);
+	mb_parse(mb);
 
 	/* Allocating 8 * 1024 Pages(32 MB total) to allocator */
 	physpginfo();

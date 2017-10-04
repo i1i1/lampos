@@ -13,49 +13,47 @@
 #define PGDIR_ALLOCATED		(1 << 9)
 
 
-size_t pagedir[1024] __attribute__ ((aligned(4096))) = {0};
-size_t pagetables[1024][1024] __attribute__ ((aligned(4096))) = {{0}};
+size_t pgdir[1024] __attribute__ ((aligned(4096))) = {0};
+size_t pgtables[1024][1024] __attribute__ ((aligned(4096))) = {{0}};
 int diridx;
 
 
-extern uint32_t endkernel;
-extern void en_pg(size_t *);
+extern char end;
+extern void pgenable(size_t *);
 
 
 physaddr_t
 physpgalloc()
 {
 	int i, j;
-	size_t *pageaddr;
+	size_t *pgaddr;
 
 	for (i = 0; i < 1024; i++) {
-		if (!(pagedir[i] & PGDIR_PRESENT))
+		if (!(pgdir[i] & PGDIR_PRESENT))
 			continue;
 
-		pageaddr = (size_t *)(pagedir[i] & 0xfffff000);
+		pgaddr = (size_t *)(pgdir[i] & 0xfffff000);
 
-		for (j = 0; j < 1024; j++) {
-			if (pageaddr[j] & PGDIR_ALLOCATED ||
-					!(pageaddr[j] & PGDIR_PRESENT))
-				continue;
-
-			pageaddr[j] |= PGDIR_ALLOCATED;
-			return pageaddr[j] & 0xfffff000;
-		}
+		for (j = 0; j < 1024; j++)
+			if (pgaddr[j] & PGDIR_PRESENT &&
+					!(pgaddr[j] & PGDIR_ALLOCATED)) {
+				pgaddr[j] |= PGDIR_ALLOCATED;
+				return pgaddr[j] & 0xfffff000;
+			}
 	}
 
 	return 0;
 }
 
 void
-physpgfree(physaddr_t page)
+physpgfree(physaddr_t pg)
 {
-	size_t *pageaddr;
+	size_t *pgaddr;
 
-	if (pagedir[page >> 22] & PGDIR_PRESENT) {
-		pageaddr = (size_t *)(pagedir[page >> 22] & 0xfffff000);
+	if (pgdir[pg >> 22] & PGDIR_PRESENT) {
+		pgaddr = (size_t *)(pgdir[pg >> 22] & 0xfffff000);
 
-		pageaddr[(page >> 12) % 1024] &= ~PGDIR_ALLOCATED;
+		pgaddr[(pg >> 12) % 1024] &= ~PGDIR_ALLOCATED;
 	}
 }
 
@@ -63,20 +61,20 @@ void
 physpginfo()
 {
 	size_t free, used, total;
-	size_t *pageaddr;
+	size_t *pgaddr;
 	int i, j;
 
 	free = used = 0;
 
 	for (i = 0; i < 1024; i++) {
-		if (!(pagedir[i] & PGDIR_PRESENT))
+		if (!(pgdir[i] & PGDIR_PRESENT))
 			continue;
 
-		pageaddr = (size_t *)(pagedir[i] & 0xfffff000);
+		pgaddr = (size_t *)(pgdir[i] & 0xfffff000);
 
 		for (j = 0; j < 1024; j++) {
-			if (pageaddr[j] & PGDIR_PRESENT) {
-				if (pageaddr[j] & PGDIR_ALLOCATED)
+			if (pgaddr[j] & PGDIR_PRESENT) {
+				if (pgaddr[j] & PGDIR_ALLOCATED)
 					used += 0x1000;
 				else
 					free += 0x1000;
@@ -96,33 +94,34 @@ physpginfo()
 }
 
 void
-pagemap(physaddr_t phys, vaddr_t virt, size_t flags)
+pgmap(physaddr_t phys, vaddr_t virt, size_t flags)
 {
-	size_t *pageaddr;
+	size_t *pgaddr;
 
-	if (!(pagedir[virt >> 22] & PGDIR_PRESENT))
-		pagedir[virt >> 22] = (size_t)pagetables[diridx++] | flags;
+	if (!(pgdir[virt >> 22] & PGDIR_PRESENT))
+		pgdir[virt >> 22] = (size_t)pgtables[diridx++] | flags;
 
-	pageaddr = (size_t *)(pagedir[virt >> 22] & 0xfffff000);
-	pageaddr[(virt >> 12) % 1024] = phys | flags;
+	pgaddr = (size_t *)(pgdir[virt >> 22] & 0xfffff000);
+	pgaddr[(virt >> 12) % 1024] = phys | flags;
 }
 
 void
-physpginit(struct area **buf, int buflen)
+physpginit(struct mb_area **mmap, int mmap_len)
 {
-	size_t i;
+	size_t i, j;
 
 	diridx = 0;
 
+	/* Mapping memory from mmap */
+	for (i = 0; i < mmap_len; i++)
+		for (j = mmap[i]->beg; j < (mmap[i]->end & 0xfffff000); j += 0x1000)
+			pgmap(j, j, PGDIR_PRESENT + PGDIR_RW);
+
 	/* Mapping first 16 Mb as if they were allocated */
 	for (i = 0; i < 0x1000000; i += 0x1000)
-		pagemap(i, i, PGDIR_PRESENT + PGDIR_RW + PGDIR_ALLOCATED);
+		pgmap(i, i, PGDIR_PRESENT + PGDIR_RW + PGDIR_ALLOCATED);
 
-	/* Mapping all other memory */
-	for (; i < (buf[buflen - 1]->end & 0xfffff000); i += 0x1000)
-		pagemap(i, i, PGDIR_PRESENT + PGDIR_RW);
-
-	en_pg(pagedir);
+	pgenable(pgdir);
 
 	iprintf("\tHELLO PAGING WORLD\n");
 }

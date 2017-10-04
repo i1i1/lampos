@@ -19,8 +19,6 @@
 #define MB_APM_FLAG	(1 << 10)
 #define MB_VBE_FLAG	(1 << 11)
 
-#define BUFSZ		4
-
 #define print64(num)		do {					\
 					iprintf("%08x", (num) >> 32);	\
 					iprintf("%08x", (num));		\
@@ -28,81 +26,79 @@
 				} while (0)
 
 
-void area_parse(struct mb_mmap *area, size_t mmap_length,
-				struct area **buf, unsigned int *bufsize);
+void area_parse(struct mb_mmap *mmap, size_t mmaplen,
+				struct mb_area **buf, unsigned int *buflen);
 
 void
-mb_parse(struct mb_info *info)
+mb_parse(struct mb_info *mb)
 {
 	unsigned int i;
 
 	iprintf("\n\t");
 
 	for (i = 11; i != 0; i--)
-		iprintf("%d", GET_BIT(info->flags, i));
+		iprintf("%d", GET_BIT(mb->flags, i));
 
 	iprintf("\n");
 
-	if (info->flags & MB_MEM_FLAG) {
-		iprintf("\tlower bound memory %dK\n", info->mem_lower);
-		iprintf("\tupper bound memory %dK\n", info->mem_upper);
+	if (mb->flags & MB_MEM_FLAG) {
+		iprintf("\tlower bound memory %dK\n", mb->mem_lower);
+		iprintf("\tupper bound memory %dK\n", mb->mem_upper);
 
 	}
-	if (info->flags & MB_BD_FLAG) {
-		if (*info->boot_device)
+	if (mb->flags & MB_BD_FLAG) {
+		if (*mb->boot_device)
 			iprintf("\tYou booted from hard drive\n");
 		else
 			iprintf("\tYou booted from floppy\n");
 
 		for (i = 1; i < 4; i++)
-			if (*(info->boot_device + i) == 0xff)
+			if (*(mb->boot_device + i) == 0xff)
 				iprintf("\tUnused partitioning %d\n", i);
 			else
 				iprintf("\tUsed partitioning %d\n", i);
 
 	}
-	if (info->flags & MB_CMD_FLAG)
-		iprintf("\tcommand line: \"%s\"\n", info->cmdline);
-	if (info->flags & MB_MODS_FLAG) {
-		iprintf("\t%d modifications loaded\n", info->mods_count);
-		iprintf("\tFirst modification address 0x%x\n", info->mods_addr);
+	if (mb->flags & MB_CMD_FLAG)
+		iprintf("\tcommand line: \"%s\"\n", mb->cmdline);
+	if (mb->flags & MB_MODS_FLAG) {
+		iprintf("\t%d modifications loaded\n", mb->mods_count);
+		iprintf("\tFirst modification address 0x%x\n", mb->mods_addr);
 
 	}
-	if (info->flags & MB_SYM_1_FLAG) {
-		iprintf("\tsymbols 1 tabsize %d\n", info->symbols.a.tabsize);
-		iprintf("\tsymbols 1 strsize %d\n", info->symbols.a.strsize);
-		iprintf("\tsymbols 1 address 0x%x\n", info->symbols.a.addr);
+	if (mb->flags & MB_SYM_1_FLAG) {
+		iprintf("\tsymbols 1 tabsize %d\n", mb->symbols.a.tabsize);
+		iprintf("\tsymbols 1 strsize %d\n", mb->symbols.a.strsize);
+		iprintf("\tsymbols 1 address 0x%x\n", mb->symbols.a.addr);
 
 	}
-	else if (info->flags & MB_SYM_2_FLAG) {
-		iprintf("\tsymbols 2 num %d\n", info->symbols.b.num);
-		iprintf("\tsymbols 2 size %d\n", info->symbols.b.size);
-		iprintf("\tsymbols 2 addr %d\n", info->symbols.b.addr);
-		iprintf("\tsymbols 2 shndx %d\n", info->symbols.b.shndx);
+	else if (mb->flags & MB_SYM_2_FLAG) {
+		iprintf("\tsymbols 2 num %d\n", mb->symbols.b.num);
+		iprintf("\tsymbols 2 size %d\n", mb->symbols.b.size);
+		iprintf("\tsymbols 2 addr %d\n", mb->symbols.b.addr);
+		iprintf("\tsymbols 2 shndx %d\n", mb->symbols.b.shndx);
 
 	}
-	if (info->flags & MB_MMAP_FLAG) {
-		struct area arr[BUFSZ], *buf[BUFSZ];
-		unsigned int buflen;
+	if (mb->flags & MB_MMAP_FLAG) {
+		unsigned int buflen = 16;
+		struct mb_area arr[buflen], *buf[buflen];
 
-		for (i = 0; i < BUFSZ; i++)
+		for (i = 0; i < buflen; i++)
 			buf[i] = arr + i;
 
-		buflen = BUFSZ;
-
-		area_parse(info->mmap_addr, info->mmap_length, buf, &buflen);
+		area_parse(mb->mmap_addr, mb->mmap_length, buf, &buflen);
 		physpginit(buf, buflen);
 
 	}
-	if (info->flags & MB_BOOT_FLAG)
-		iprintf("\tbootloader name:\"%s\"\n", info->bootloader);
+	if (mb->flags & MB_BOOT_FLAG)
+		iprintf("\tbootloader name:\"%s\"\n", mb->bootloader);
 	/*
-	if (info->flags & MB__FLAG) {
+	if (mb->flags & MB__FLAG) {
 	}*/
 }
 
 int
-area_cmp(const struct area **a, const struct area **b)
+area_cmp(const struct mb_area **a, const struct mb_area **b)
 {
 	if ((*a)->beg < (*b)->beg)
 		return -1;
@@ -112,23 +108,23 @@ area_cmp(const struct area **a, const struct area **b)
 }
 
 void
-area_parse(struct mb_mmap *area, size_t mmap_length,
-				struct area **buf, unsigned int *buflen)
+area_parse(struct mb_mmap *mmap, size_t mmaplen,
+				struct mb_area **buf, unsigned int *buflen)
 {
 	unsigned int i, j, prev;
 
 	j = 0;
 
-	while (mmap_length >= 24 && j < *buflen) {
-		if (area->type == 1) {
-			buf[j]->beg = area->base_addr;
-			buf[j++]->end = area->base_addr + area->length;
+	while (mmaplen >= 24 && j < *buflen) {
+		if (mmap->type == 1) {
+			buf[j]->beg = mmap->base_addr;
+			buf[j++]->end = mmap->base_addr + mmap->length;
 
 		}
 
-		mmap_length -= area->size;
-		area = (struct mb_mmap *)((unsigned char *)area + area->size + 4);
-		mmap_length -= 4;
+		mmaplen -= mmap->size;
+		mmap = (struct mb_mmap *)((unsigned char *)mmap + mmap->size + 4);
+		mmaplen -= 4;
 
 	}
 /*
