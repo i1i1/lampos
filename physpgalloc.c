@@ -15,7 +15,7 @@
 
 size_t pgdir[1024] __attribute__ ((aligned(4096))) = {0};
 size_t pgtables[1024][1024] __attribute__ ((aligned(4096))) = {{0}};
-int diridx;
+int nextdir;
 
 
 extern char end;
@@ -49,11 +49,23 @@ void
 physpgfree(physaddr_t pg)
 {
 	size_t *pgaddr;
+	int i, j;
 
-	if (pgdir[pg >> 22] & PGDIR_PRESENT) {
-		pgaddr = (size_t *)(pgdir[pg >> 22] & 0xfffff000);
+	for (i = 0; i < 1024; i++) {
+		if (!(pgdir[i] & PGDIR_PRESENT))
+			continue;
 
-		pgaddr[(pg >> 12) % 1024] &= ~PGDIR_ALLOCATED;
+		pgaddr = (size_t *)(pgdir[i] & 0xfffff000);
+
+		for (j = 0; j < 1024; j++) {
+			if (!(pgdir[j] & PGDIR_PRESENT))
+				continue;
+
+			if ((pgdir[j] & 0xfffff000) == pg) {
+				pgdir[j] &= ~PGDIR_ALLOCATED;
+				return;
+			}
+		}
 	}
 }
 
@@ -99,18 +111,18 @@ pgmap(physaddr_t phys, vaddr_t virt, size_t flags)
 	size_t *pgaddr;
 
 	if (!(pgdir[virt >> 22] & PGDIR_PRESENT))
-		pgdir[virt >> 22] = (size_t)pgtables[diridx++] | flags;
+		pgdir[virt >> 22] = (size_t)pgtables[nextdir++] | flags;
 
 	pgaddr = (size_t *)(pgdir[virt >> 22] & 0xfffff000);
 	pgaddr[(virt >> 12) % 1024] = phys | flags;
 }
 
 void
-physpginit(struct mb_area **mmap, int mmap_len)
+physpginit(struct mm_area **mmap, int mmap_len)
 {
 	size_t i, j;
 
-	diridx = 0;
+	nextdir = 0;
 
 	/* Mapping memory from mmap */
 	for (i = 0; i < mmap_len; i++)

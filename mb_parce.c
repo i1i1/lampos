@@ -27,7 +27,7 @@
 
 
 void area_parse(struct mb_mmap *mmap, size_t mmaplen,
-				struct mb_area **buf, unsigned int *buflen);
+				struct mm_area **buf, unsigned int *buflen);
 
 void
 mb_parse(struct mb_info *mb)
@@ -81,7 +81,7 @@ mb_parse(struct mb_info *mb)
 	}
 	if (mb->flags & MB_MMAP_FLAG) {
 		unsigned int buflen = 16;
-		struct mb_area arr[buflen], *buf[buflen];
+		struct mm_area arr[buflen], *buf[buflen];
 
 		for (i = 0; i < buflen; i++)
 			buf[i] = arr + i;
@@ -98,7 +98,7 @@ mb_parse(struct mb_info *mb)
 }
 
 int
-area_cmp(const struct mb_area **a, const struct mb_area **b)
+area_cmp(const struct mm_area **a, const struct mm_area **b)
 {
 	if ((*a)->beg < (*b)->beg)
 		return -1;
@@ -109,7 +109,7 @@ area_cmp(const struct mb_area **a, const struct mb_area **b)
 
 void
 area_parse(struct mb_mmap *mmap, size_t mmaplen,
-				struct mb_area **buf, unsigned int *buflen)
+				struct mm_area **buf, unsigned int *buflen)
 {
 	unsigned int i, j, prev;
 

@@ -62,7 +62,7 @@ struct mb_mmap {
 
 };
 
-struct mb_area {
+struct mm_area {
 	uint64_t beg;
 	uint64_t end;
 
