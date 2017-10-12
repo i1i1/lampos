@@ -1,5 +1,5 @@
 #include "buddyalloc.h"
-#include "physpgalloc.h"
+#include "pgalloc.h"
 #include "kernel.h"
 
 
@@ -313,6 +313,6 @@ void
 balloc_init(int numpages)
 {
 	for (; numpages != 0; numpages--)
-		addbuddy((void *)physpgalloc(), 12, BUDDY_FREE);
+		addbuddy((void *)pgalloc(), 12, BUDDY_FREE);
 }
 

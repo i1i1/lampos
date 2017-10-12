@@ -4,14 +4,19 @@
 #include "defs.h"
 #include "mb_parce.h"
 
-typedef size_t physaddr_t;
-typedef size_t vaddr_t;
 
+/* Helper for translating pages from virtual to physical */
+size_t virttophys(void *pg);
 
-size_t physpgalloc();
-void physpgfree(size_t page);
-void physpginfo();
-void physpginit(struct mm_area **mmap, int mmap_len);
+/* Virtual page allocator */
+void *pgalloc();
+void pgfree(void *pg);
+void pginfo();
+
+/* Mapper of pages */
+void pgmap(size_t phys, void *virt, size_t flags);
+
+void pginit(struct mm_area **mmap, int mmap_len);
 
 
 #endif /* _PHYSPGALLOC_H_ */

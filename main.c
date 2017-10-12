@@ -3,7 +3,7 @@
 #include "com.h"
 #include "defs.h"
 #include "mb_parce.h"
-#include "physpgalloc.h"
+#include "pgalloc.h"
 #include "buddyalloc.h"
 
 #define VERSION_MAJOR	0
@@ -12,12 +12,11 @@
 
 extern char etext, edata, end;
 
-
 extern void segm_init();
 
 
 void
-main(size_t eax, void *mb)
+main(size_t magick, void *mb)
 {
 	cli();
 
@@ -30,7 +29,7 @@ main(size_t eax, void *mb)
 	mb_parse(mb);
 
 	/* Allocating 8 * 1024 Pages(32 MB total) to allocator */
-	physpginfo();
+	pginfo();
 	balloc_init(8 * 1024);
 	balloc_info();
 

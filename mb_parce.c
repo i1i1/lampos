@@ -1,6 +1,6 @@
 #include "defs.h"
 #include "kernel.h"
-#include "physpgalloc.h"
+#include "pgalloc.h"
 #include "sort.h"
 
 #include "mb_parce.h"
@@ -87,7 +87,7 @@ mb_parse(struct mb_info *mb)
 			buf[i] = arr + i;
 
 		area_parse(mb->mmap_addr, mb->mmap_length, buf, &buflen);
-		physpginit(buf, buflen);
+		pginit(buf, buflen);
 
 	}
 	if (mb->flags & MB_BOOT_FLAG)

@@ -2,7 +2,7 @@
 #include "kernel.h"
 #include "mb_parce.h"
 
-#include "physpgalloc.h"
+#include "pgalloc.h"
 
 
 #define PGDIR_PRESENT		1
@@ -22,10 +22,10 @@ extern char end;
 extern void pgenable(size_t *);
 
 
-physaddr_t
-physpgalloc()
+void *
+pgalloc()
 {
-	int i, j;
+	size_t i, j;
 	size_t *pgaddr;
 
 	for (i = 0; i < 1024; i++) {
@@ -38,39 +38,41 @@ physpgalloc()
 			if (pgaddr[j] & PGDIR_PRESENT &&
 					!(pgaddr[j] & PGDIR_ALLOCATED)) {
 				pgaddr[j] |= PGDIR_ALLOCATED;
-				return pgaddr[j] & 0xfffff000;
+				return (void *)((i << 22) + (j << 12));
 			}
 	}
 
 	return 0;
 }
 
-void
-physpgfree(physaddr_t pg)
+size_t
+virttophys(void *pg)
 {
 	size_t *pgaddr;
-	int i, j;
 
-	for (i = 0; i < 1024; i++) {
-		if (!(pgdir[i] & PGDIR_PRESENT))
-			continue;
+	if (pgdir[(size_t)pg >> 22] & PGDIR_PRESENT) {
+		pgaddr = (size_t *)(pgdir[(size_t)pg >> 22] & 0xfffff000);
 
-		pgaddr = (size_t *)(pgdir[i] & 0xfffff000);
+		return pgaddr[((size_t)pg >> 12) % 1024] & 0xfffff000;
+	}
 
-		for (j = 0; j < 1024; j++) {
-			if (!(pgdir[j] & PGDIR_PRESENT))
-				continue;
+	return 0;
+}
 
-			if ((pgdir[j] & 0xfffff000) == pg) {
-				pgdir[j] &= ~PGDIR_ALLOCATED;
-				return;
-			}
-		}
+void
+pgfree(void *pg)
+{
+	size_t *pgaddr;
+
+	if (pgdir[(size_t)pg >> 22] & PGDIR_PRESENT) {
+		pgaddr = (size_t *)(pgdir[(size_t)pg >> 22] & 0xfffff000);
+
+		pgaddr[((size_t)pg >> 12) % 1024] &= ~PGDIR_ALLOCATED;
 	}
 }
 
 void
-physpginfo()
+pginfo()
 {
 	size_t free, used, total;
 	size_t *pgaddr;
@@ -96,7 +98,7 @@ physpginfo()
 
 	total = used + free;
 
-	iprintf("\n\nPHYSPAGE ALLOCATOR INFO:\n");
+	iprintf("\n\nPAGE ALLOCATOR INFO:\n");
 	iprintf("\ttotal:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n", total >> 30,\
 		(total >> 20) % 1024, (total >> 10) % 1024, total % 1024);
 	iprintf("\tfree:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n", free >> 30,\
@@ -106,32 +108,32 @@ physpginfo()
 }
 
 void
-pgmap(physaddr_t phys, vaddr_t virt, size_t flags)
+pgmap(size_t phys, void *virt, size_t flags)
 {
 	size_t *pgaddr;
 
-	if (!(pgdir[virt >> 22] & PGDIR_PRESENT))
-		pgdir[virt >> 22] = (size_t)pgtables[nextdir++] | flags;
+	if (!(pgdir[(size_t)virt >> 22] & PGDIR_PRESENT))
+		pgdir[(size_t)virt >> 22] = (size_t)pgtables[nextdir++] | flags;
 
-	pgaddr = (size_t *)(pgdir[virt >> 22] & 0xfffff000);
-	pgaddr[(virt >> 12) % 1024] = phys | flags;
+	pgaddr = (size_t *)(pgdir[(size_t)virt >> 22] & 0xfffff000);
+	pgaddr[((size_t)virt >> 12) % 1024] = phys | flags;
 }
 
 void
-physpginit(struct mm_area **mmap, int mmap_len)
+pginit(struct mm_area **mmap, int mmap_len)
 {
 	size_t i, j;
 
 	nextdir = 0;
 
 	/* Mapping memory from mmap */
-	for (i = 0; i < mmap_len; i++)
+	for (i = 0; (int)i < mmap_len; i++)
 		for (j = mmap[i]->beg; j < (mmap[i]->end & 0xfffff000); j += 0x1000)
-			pgmap(j, j, PGDIR_PRESENT + PGDIR_RW);
+			pgmap(j, (void *)j, PGDIR_PRESENT + PGDIR_RW);
 
 	/* Mapping first 16 Mb as if they were allocated */
 	for (i = 0; i < 0x1000000; i += 0x1000)
-		pgmap(i, i, PGDIR_PRESENT + PGDIR_RW + PGDIR_ALLOCATED);
+		pgmap(i, (void *)i, PGDIR_PRESENT + PGDIR_RW + PGDIR_ALLOCATED);
 
 	pgenable(pgdir);
 

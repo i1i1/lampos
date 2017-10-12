@@ -68,17 +68,18 @@ sti:
 
 /* load_gdt -- loads Global Descriptor Table to GDTR. */
 
+.type	load_gdt	@function
 load_gdt:
 	movl	0x4(%esp),	%eax
 	lgdt	(%eax)
 	ljmp	$(KERNEL_CODE),	$(.Lfinish)
 .Lfinish:
 	mov	$(KERNEL_DATA),	%eax
+	mov	%eax,	%ss
 	mov	%eax,	%ds
 	mov	%eax,	%es
-	mov	%eax,	%gs
 	mov	%eax,	%fs
-	mov	%eax,	%ss
+	mov	%eax,	%gs
 	ret
 
 .type	pgenable	@function
@@ -89,6 +90,6 @@ pgenable:
 	mov	%cr0, %eax
 	or	$0x80000000, %eax
 	mov	%eax, %cr0
-	jmp	.finish
-.finish:
+	jmp	.Pfinish
+.Pfinish:
 	ret
