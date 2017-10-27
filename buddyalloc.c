@@ -99,7 +99,7 @@ addbuddy(struct buddy_lst *addr, int power, int flag)
 	/* If only 1 element in list */
 	if (cur == NULL) {
 		if (flag != BUDDY_ALLOCATED && prev->flag == BUDDY_FREE &&\
-					mergeable(prev, addr, power)) {
+				mergeable(prev, addr, power)) {
 			buddies[power] = NULL;
 			addbuddy(MIN(prev, addr), power + 1, flag);
 			return;
@@ -137,7 +137,7 @@ addbuddy(struct buddy_lst *addr, int power, int flag)
 
 	/* Trying to merge with right one */
 	if (cur->next != NULL && cur->next->flag == BUDDY_FREE &&\
-					mergeable(addr, cur->next, power)) {
+			mergeable(addr, cur->next, power)) {
 		cur->next = cur->next->next;
 		addbuddy(addr, power + 1, flag);
 		return;
@@ -165,7 +165,7 @@ divide(struct _findnode node, int power)
 	/* Dividing node */
 	for (; node.power > power; node.power--)
 		addbuddy((void *)((uint8_t *)(node.next) + (1 << (node.power - 1))),\
-					node.power - 1, BUDDY_FREE);
+				node.power - 1, BUDDY_FREE);
 
 	addbuddy(node.next, node.power, BUDDY_ALLOCATED);
 
@@ -254,7 +254,7 @@ bfree(void *p)
 
 	/* If '.cur' and '.next' can be merged */
 	if (res.cur != NULL && res.cur->flag == BUDDY_FREE &&\
-				mergeable(res.cur, res.next, res.power)) {
+			mergeable(res.cur, res.next, res.power)) {
 		if (res.prev == NULL)
 			buddies[res.power] = res.next->next;
 		else
@@ -302,7 +302,7 @@ balloc_info()
 	total = used + free;
 
 	iprintf("\n\ttotal:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n", total >> 30,\
-		(total >> 20) % 1024, (total >> 10) % 1024, total % 1024);
+			(total >> 20) % 1024, (total >> 10) % 1024, total % 1024);
 	iprintf("\tfree:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n", free >> 30,\
 			(free >> 20) % 1024, (free >> 10) % 1024, free % 1024);
 	iprintf("\tused:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n\n", used >> 30,\

@@ -2,7 +2,7 @@ KERNEL_LD = build/link-kernel.ld
 STAGE2 = build/stage2_eltorito
 GENISOIMAGE = genisoimage
 CC = i586-elf-gcc
-CFLAGS = -O3 -Wall -Wextra -I./include -nostdlib -ffreestanding -m32
+CFLAGS = -O3 -Wall -I./include -nostdlib -ffreestanding -m32
 
 sources = main.c vga.c libk.c ioport.c printf.c segm.c pgalloc.c sort.c \
 	mb_parce.c com.c buddyalloc.c
@@ -14,12 +14,12 @@ objects = $(addprefix build/object/, $(obj))
 all: premake boot.iso
 
 premake:
-	mkdir -p build/object/
+	@mkdir -p build/object/
 
 test: all
-	qemu-system-i386 -kernel boot.bin -m 128M -nographic &
-	sleep 2
-	kill `pidof qemu-system-i386|cut -d' ' -f1`
+	@qemu-system-i386 -kernel boot.bin -m 128M -nographic &
+	@sleep 2
+	@kill `pidof qemu-system-i386|cut -d' ' -f1`
 
 build/object/%.o: kernel.h defs.h
 

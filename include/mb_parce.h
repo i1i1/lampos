@@ -62,6 +62,26 @@ struct mb_mmap {
 
 };
 
+struct mb_header {
+	uint32_t magic;
+	uint32_t flags;
+	uint32_t checksum;
+
+	/* If flag[16] is set */
+	uint32_t header_addr;
+	uint32_t load_addr;
+	uint32_t load_end_addr;
+	uint32_t bss_end_addr;
+	uint32_t entry_addr;
+
+	/* If flag[2] is set */
+	uint32_t mode_type;
+	uint32_t width;
+	uint32_t height;
+	uint32_t depth;
+
+};
+
 struct mm_area {
 	uint64_t beg;
 	uint64_t end;
@@ -69,7 +89,7 @@ struct mm_area {
 };
 
 
-void mb_parse(struct mb_info *info);
+void mb_parse(struct mb_info *info, struct mm_area ***mm, int *mmlen);
 
 
 #endif

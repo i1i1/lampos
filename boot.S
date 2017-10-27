@@ -13,6 +13,7 @@ kernel_stack:
 .space KERNEL_STACK
 
 .section .multiboot
+multiboot:
 .long HEADER_MAGIC
 .long HEADER_FLAGS
 .long CHECKSUM
@@ -24,6 +25,7 @@ kernel_stack:
 .global sti
 .global load_gdt
 .global pgenable
+.global multiboot
 
 .type	_start,	@function
 _start:

@@ -11,22 +11,28 @@
 
 
 extern char etext, edata, end;
+extern struct mb_header multiboot;
 
 extern void segm_init();
 
 
 void
-main(size_t magick, void *mb)
+main(size_t magick, struct mb_info *mb)
 {
+	int mmlen;
+	struct mm_area **mm;
+
 	cli();
 
 	vga_init();
 	com_init(COM1_PORT_ADDRESS);
 	com_init(COM2_PORT_ADDRESS);
 	segm_init();
+	iprintf("\tmb flags = 0x%x\n", multiboot.flags);
 
-	/* Initialising physpage allocator and enable paging */
-	mb_parse(mb);
+	mb_parse(mb, &mm, &mmlen);
+
+	pginit(mm, mmlen);
 
 	/* Allocating 8 * 1024 Pages(32 MB total) to allocator */
 	pginfo();

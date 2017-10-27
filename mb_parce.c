@@ -19,18 +19,79 @@
 #define MB_APM_FLAG	(1 << 10)
 #define MB_VBE_FLAG	(1 << 11)
 
-#define print64(num)		do {					\
-					iprintf("%08x", (num) >> 32);	\
-					iprintf("%08x", (num));		\
-									\
-				} while (0)
 
-
-void area_parse(struct mb_mmap *mmap, size_t mmaplen,
-				struct mm_area **buf, unsigned int *buflen);
+int
+area_cmp(const struct mm_area **a, const struct mm_area **b)
+{
+	if ((*a)->beg < (*b)->beg)
+		return -1;
+	if ((*a)->beg > (*b)->beg)
+		return 1;
+	return 0;
+}
 
 void
-mb_parse(struct mb_info *mb)
+area_parse(struct mb_mmap *mmap, size_t mmaplen,
+				struct mm_area **buf, unsigned int *buflen)
+{
+	unsigned int i, j, prev;
+
+	j = 0;
+
+	while (mmaplen >= 24 && j < *buflen) {
+		if (mmap->type == 1) {
+			buf[j]->beg = mmap->base_addr;
+			buf[j++]->end = mmap->base_addr + mmap->length;
+
+		}
+
+		mmaplen -= mmap->size;
+		mmap = (struct mb_mmap *)((unsigned char *)mmap + mmap->size + 4);
+		mmaplen -= 4;
+
+	}
+/*
+	//TEST
+	j = 6;
+
+	buf[0]->beg = 3, buf[0]->end = 5;
+	buf[1]->beg = 0, buf[1]->end = 2;
+	buf[2]->beg = 1, buf[2]->end = 3;
+	buf[3]->beg = 0, buf[3]->end = 2;
+	buf[4]->beg = 10, buf[4]->end = 15;
+	buf[5]->beg = 11, buf[5]->end = 12;
+*/
+	*buflen = j;
+
+	sort(buf, *buflen, sizeof(void *), (void *)area_cmp);
+
+	for (i = 0; i < *buflen; i++)
+		iprintf("\tbeg = 0x%016llx\tend = 0x%016llx\n", buf[i]->beg, buf[i]->end);
+
+	iprintf("\n");
+
+	for (prev = 0, i = 1; i < *buflen;) {
+		if (buf[i]->beg <= buf[prev]->end) {
+			*buflen -= 1;
+
+			if (buf[i]->end > buf[prev]->end)
+				buf[prev]->end = buf[i]->end;
+
+			for (j = i; j < *buflen; j++)
+				SWAP(buf[j], buf[j + 1]);
+
+		}
+		else prev++, i++;
+
+	}
+
+
+	for (i = 0; i < *buflen; i++)
+		iprintf("\tbeg = 0x%016llx\tend = 0x%016llx\n", buf[i]->beg, buf[i]->end);
+}
+
+void
+mb_parse(struct mb_info *mb, struct mm_area ***mm, int *mmlen)
 {
 	unsigned int i;
 
@@ -87,7 +148,9 @@ mb_parse(struct mb_info *mb)
 			buf[i] = arr + i;
 
 		area_parse(mb->mmap_addr, mb->mmap_length, buf, &buflen);
-		pginit(buf, buflen);
+
+		*mm = buf;
+		*mmlen = buflen;
 
 	}
 	if (mb->flags & MB_BOOT_FLAG)
@@ -95,86 +158,5 @@ mb_parse(struct mb_info *mb)
 	/*
 	if (mb->flags & MB__FLAG) {
 	}*/
-}
-
-int
-area_cmp(const struct mm_area **a, const struct mm_area **b)
-{
-	if ((*a)->beg < (*b)->beg)
-		return -1;
-	if ((*a)->beg > (*b)->beg)
-		return 1;
-	return 0;
-}
-
-void
-area_parse(struct mb_mmap *mmap, size_t mmaplen,
-				struct mm_area **buf, unsigned int *buflen)
-{
-	unsigned int i, j, prev;
-
-	j = 0;
-
-	while (mmaplen >= 24 && j < *buflen) {
-		if (mmap->type == 1) {
-			buf[j]->beg = mmap->base_addr;
-			buf[j++]->end = mmap->base_addr + mmap->length;
-
-		}
-
-		mmaplen -= mmap->size;
-		mmap = (struct mb_mmap *)((unsigned char *)mmap + mmap->size + 4);
-		mmaplen -= 4;
-
-	}
-/*
-	//TEST
-	j = 6;
-
-	buf[0]->beg = 3, buf[0]->end = 5;
-	buf[1]->beg = 0, buf[1]->end = 2;
-	buf[2]->beg = 1, buf[2]->end = 3;
-	buf[3]->beg = 0, buf[3]->end = 2;
-	buf[4]->beg = 10, buf[4]->end = 15;
-	buf[5]->beg = 11, buf[5]->end = 12;
-*/
-	*buflen = j;
-
-	sort(buf, *buflen, sizeof(void *), (void *)area_cmp);
-
-	for (i = 0; i < *buflen; i++) {
-		iprintf("\tbeg = 0x");
-		print64(buf[i]->beg);
-		iprintf("\tend = 0x");
-		print64(buf[i]->end);
-		iprintf("\n");
-
-	}
-
-	iprintf("\n");
-
-	for (prev = 0, i = 1; i < *buflen;) {
-		if (buf[i]->beg <= buf[prev]->end) {
-			*buflen -= 1;
-
-			if (buf[i]->end > buf[prev]->end)
-				buf[prev]->end = buf[i]->end;
-
-			for (j = i; j < *buflen; j++)
-				SWAP(buf[j], buf[j + 1]);
-
-		}
-		else prev++, i++;
-
-	}
-
-	for (i = 0; i < *buflen; i++) {
-		iprintf("\tbeg = 0x");
-		print64(buf[i]->beg);
-		iprintf("\tend = 0x");
-		print64(buf[i]->end);
-		iprintf("\n");
-
-	}
 }
 
