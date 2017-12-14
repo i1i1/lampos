@@ -26,10 +26,19 @@ SECTIONS
 
 	.bss BLOCK(4K): ALIGN(4K)
 	{
-		*(COMMON)
 		*(.bss)
 	}
 
 	end = .;
+	. = 8M;
+
+	int14_s = .;
+
+	int14 BLOCK(4K): ALIGN(4K)
+	{
+		*(int14)
+	}
+
+	int14_e = .;
 }
 

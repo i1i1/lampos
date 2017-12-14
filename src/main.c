@@ -4,6 +4,7 @@
 #include "defs.h"
 #include "mb_parce.h"
 #include "pgalloc.h"
+#include "interrupt.h"
 #include "buddyalloc.h"
 
 #define VERSION_MAJOR	0
@@ -28,16 +29,20 @@ main(size_t magick, struct mb_info *mb)
 	com_init(COM1_PORT_ADDRESS);
 	com_init(COM2_PORT_ADDRESS);
 	segm_init();
+
 	iprintf("\tmb flags = 0x%x\n", multiboot.flags);
 
 	mb_parse(mb, &mm, &mmlen);
 
+	int_init();
 	pginit(mm, mmlen);
 
 	/* Allocating 8 * 1024 Pages(32 MB total) to allocator */
-	pginfo();
 	balloc_init(8 * 1024);
-	balloc_info();
+	pginfo();
+	//balloc_info();
+	iprintf("pgmap at %p\n", pgmap);
+	for (;;);
 
 	iprintf("\ttext ends at 0x%08x\n", &etext);
 	iprintf("\tdata ends at 0x%08x\n", &edata);

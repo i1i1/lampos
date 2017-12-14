@@ -6,51 +6,6 @@
 struct buddy_lst *buddies[MAXBUDDY + 1] = {NULL};
 
 
-/* Function that finds buddy at 'addr' with flag = 'flag'
- * with minimum power = 'initpow'.
- * If 'addr' = 0 then all addreses match.
- * The result will be in '.next'.
- * If noone matches then '.next' == NULL.
- */
-struct _findnode
-findbuddy(struct buddy_lst *addr, int initpow, int flag)
-{
-	struct buddy_lst *prev, *cur, *next;
-	int i;
-
-	for (i = initpow; i <= MAXBUDDY; i++) {
-		/* If no elements in list */
-		if (buddies[i] == NULL)
-			continue;
-
-		/* If buddies[i] matches */
-		if (buddies[i]->flag == flag &&\
-				(addr == NULL || buddies[i] == addr)) {
-			prev = NULL;
-			cur = NULL;
-			next = buddies[i];
-			goto found;
-		}
-
-		/* If 1 elements in list */
-		if (buddies[i]->next == NULL)
-			continue;
-
-		prev = NULL;
-		cur = buddies[i];
-		next = cur->next;
-
-		for (; next != NULL; prev = cur, cur = next, next = next->next)
-			if (next->flag == flag && (addr == NULL || next == addr))
-				goto found;
-	}
-
-	/* Didnt found */
-	return (struct _findnode) { NULL, NULL, NULL, 0 };
-found:
-	return (struct _findnode) { prev, cur, next, i };
-}
-
 int
 mergeable(struct buddy_lst *a, struct buddy_lst *b, int power)
 {
@@ -75,207 +30,171 @@ mergeable(struct buddy_lst *a, struct buddy_lst *b, int power)
 void
 addbuddy(struct buddy_lst *addr, int power, int flag)
 {
-	struct buddy_lst *prev, *cur;
+	struct buddy_lst *np;
 
 	if (addr == NULL)
 		return;
 
-	prev = buddies[power];
-
-	if ((1 << power) <= sizeof(struct buddy_lst))
-		return;
+	np = buddies[power];
 
 	/* If no elementes in list */
-	if (prev == NULL) {
+	if (np == NULL) {
 		buddies[power] = addr;
-		buddies[power]->next = NULL;
+		buddies[power]->prev = buddies[power]->next = NULL;
 		buddies[power]->flag = flag;
 
 		return;
 	}
 
-	cur = prev->next;
-
 	/* If only 1 element in list */
-	if (cur == NULL) {
-		if (flag != BUDDY_ALLOCATED && prev->flag == BUDDY_FREE &&\
-				mergeable(prev, addr, power)) {
+	if (np->next == NULL) {
+		if (flag != BUDDY_ALLOCATED && np->flag == BUDDY_FREE &&
+				mergeable(np, addr, power)) {
 			buddies[power] = NULL;
-			addbuddy(MIN(prev, addr), power + 1, flag);
+			addbuddy(MIN(np, addr), power + 1, flag);
 			return;
 		}
 
-		if (prev < addr) {
-			prev->next = addr;
+		if (np < addr) {
+			np->next = addr;
 			addr->next = NULL;
+			addr->prev = np;
 		}
 		else {
 			buddies[power] = addr;
-			addr->next = prev;
+			addr->next = np;
+			addr->prev = NULL;
 		}
 
 		addr->flag = flag;
 		return;
 	}
 
-	/* Finding place for area
-	 * (result will be between 'cur' and 'cur->next')
-	 */
-	for (; cur->next != NULL; prev = cur, cur = cur->next)
-		if (cur->next > addr)
+	for (; np->next != NULL; np = np->next)
+		if (np->next > addr)
 			break;
 
 	if (flag == BUDDY_ALLOCATED)
-		goto finalize;
+		goto addbuddy_finalize;
 
 	/* Trying to merge with left one */
-	if (cur->flag == BUDDY_FREE && mergeable(cur, addr, power)) {
-		prev->next = cur->next;
-		addbuddy(MIN(cur, addr), power + 1, flag);
+	if (np->flag == BUDDY_FREE && mergeable(np, addr, power)) {
+		np->prev->next = np->next;
+		addbuddy(np, power + 1, flag);
 		return;
 	}
 
 	/* Trying to merge with right one */
-	if (cur->next != NULL && cur->next->flag == BUDDY_FREE &&\
-			mergeable(addr, cur->next, power)) {
-		cur->next = cur->next->next;
+	if (np->next && np->next->flag == BUDDY_FREE && mergeable(addr, np->next, power)) {
+		np->next = np->next->next;
 		addbuddy(addr, power + 1, flag);
 		return;
 	}
 
-finalize:
-	/* Adding area to list */
-	addr->next = cur->next;
-	cur->next = addr;
+addbuddy_finalize:
+	/* IF not mergeable with other areas or allocated */
+	addr->next = np->next;
+	addr->prev = np;
+	np->next->prev = addr;
+	np->next = addr;
 	addr->flag = flag;
-}
-
-/* Divides 'node.next' to the object with power = 'power',
- * makes it allocated and returns it.
- */
-struct buddy_lst *
-divide(struct _findnode node, int power)
-{
-	/* If list begins with node that will be divided */
-	if (node.cur == NULL)
-		buddies[node.power] = node.next->next;
-	else
-		node.cur->next = node.next->next;
-
-	/* Dividing node */
-	for (; node.power > power; node.power--)
-		addbuddy((void *)((uint8_t *)(node.next) + (1 << (node.power - 1))),\
-				node.power - 1, BUDDY_FREE);
-
-	addbuddy(node.next, node.power, BUDDY_ALLOCATED);
-
-	return node.next;
 }
 
 void *
 balloc(size_t size)
 {
-	struct _findnode res;
-	int pow;
+	struct buddy_lst *np;
+	int i, pow;
 
 	/* Finding minimum power for this size */
-	for (pow = 3; size > (1 << pow) - sizeof(struct buddy_lst); pow++)
+	for (pow = 0; (1 << pow) < sizeof(struct buddy_lst); pow++)
 		;
 
-	res = findbuddy(NULL, pow, BUDDY_FREE);
+	for (; (1 << pow) - sizeof(struct buddy_lst) < size; pow++)
+		;
+
+	/* Finding fitting buddy */
+	for (i = pow; i < MAXBUDDY; i++)
+		for (np = buddies[i]; np != NULL; np = np->next)
+			if (np->flag == BUDDY_FREE)
+				goto balloc_found;
 
 	/* If didnt find empty space */
-	if (res.next == NULL)
-		return NULL;
+	return NULL;
 
-	return divide(res, pow) + 1;
-}
-
-void *
-brealloc(void *p, size_t size)
-{
-	struct buddy_lst *ptr;
-	struct _findnode res;
-	int pow, i;
-
-	if (p == NULL || p == (void *)(sizeof(struct buddy_lst)))
-		return NULL;
-
-	ptr = (void *)((char *)p - sizeof(struct buddy_lst));
-
-	res = findbuddy(ptr, 0, BUDDY_ALLOCATED);
-
-	/* If didnt find buddy marked by 'ptr' */
-	if (res.next == NULL)
-		return balloc(size);
-
-	if (res.cur == NULL)
-		buddies[res.power] = res.next->next;
-	else
-		res.cur->next = res.next->next;
-
-
-	addbuddy(res.next, res.power, BUDDY_REALLOCATED);
-	pow = res.power;
-	res = findbuddy(res.next, res.power, BUDDY_REALLOCATED);
-
-	if (size > (1 << res.power) - sizeof(struct buddy_lst)) {
-		res.next->flag = BUDDY_FREE;
-		divide(res, pow);
-		return NULL;
+balloc_found:
+	if (i == pow) {
+		np->flag = BUDDY_ALLOCATED;
+		return np + 1;
 	}
 
-	/* Finding minimum power for this size */
-	for (i = 3; size > (1 << i) - sizeof(struct buddy_lst); i++)
-		;
+	/* Dividing node */
 
-	ptr = divide(res, i) + 1;
-	memcpy(ptr, p, (1 << MIN(i, pow)) - sizeof(struct buddy_lst));
+	if (np == buddies[i]) {
+		buddies[i] = np->next;
+		buddies[i]->prev = NULL;
+	}
+	else {
+		np->prev->next = np->next;
+		np->next->prev = np->prev;
+	}
 
-	return ptr;
+	for (; i > pow; i--)
+		addbuddy((void *)((int8_t *)np + (1 << (i - 1))), i - 1, BUDDY_FREE);
+
+	addbuddy(np, i, BUDDY_ALLOCATED);
+
+	return np + 1;
 }
 
 void
 bfree(void *p)
 {
-	struct buddy_lst *ptr;
-	struct _findnode res;
+	struct buddy_lst *np;
+	int i;
 
-	if (p == NULL || p == (void *)(sizeof(struct buddy_lst)))
+	if (p == NULL)
 		return;
 
-	ptr = (void *)((char *)p - sizeof(struct buddy_lst));
+	np = (struct buddy_lst *)p - 1;
 
-	res = findbuddy(ptr, 0, BUDDY_ALLOCATED);
+	for (i = 0; i < MAXBUDDY; i++)
+		for (np = buddies[i]; np != NULL; np = np->next)
+			if (np == (struct buddy_lst *)p - 1)
+				goto bfree_found;
 
-	/* If didnt find buddy marked by 'ptr' */
-	if (res.next == NULL)
-		return;
+	return;
 
-	/* If '.cur' and '.next' can be merged */
-	if (res.cur != NULL && res.cur->flag == BUDDY_FREE &&\
-			mergeable(res.cur, res.next, res.power)) {
-		if (res.prev == NULL)
-			buddies[res.power] = res.next->next;
-		else
-			res.prev->next = res.next->next;
+bfree_found:
+	if (np->prev && np->prev->flag == BUDDY_FREE && mergeable(np->prev, np, i)) {
+		if (np->prev->prev) {
+			np->prev->prev->next = np->next;
+			np->next->prev = np->prev->prev;
+		}
+		else {
+			buddies[i] = np->next;
+			buddies[i]->prev = NULL;
+		}
 
-		addbuddy(res.cur, res.power + 1, BUDDY_FREE);
-		return;
-	}
-
-	/* If '.next' and '.next->next' can be merged */
-	if (res.next->next != NULL && res.next->next->flag == BUDDY_FREE\
-			&& mergeable(res.next, res.next->next, res.power)) {
-		if (res.prev == NULL)
-			buddies[res.power] = NULL;
-		else
-			res.cur->next = res.next->next->next;
-		addbuddy(res.next, res.power + 1, BUDDY_FREE);
+		addbuddy(np->prev, i + 1, BUDDY_FREE);
 		return;
 	}
 
-	res.next->flag = BUDDY_FREE;
+	if (np->next && np->next->flag == BUDDY_FREE && mergeable(np, np->next, i)) {
+		if (np->prev) {
+			np->prev->next = np->next->next;
+			np->next->next->prev = np->prev;
+		}
+		else {
+			buddies[i] = np->next->next;
+			buddies[i]->prev = NULL;
+		}
+
+		addbuddy(np, i + 1, BUDDY_FREE);
+		return;
+	}
+
+	np->flag = BUDDY_FREE;
 }
 
 void

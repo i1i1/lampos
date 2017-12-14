@@ -24,8 +24,11 @@ multiboot:
 .global cli
 .global sti
 .global load_gdt
+.global load_idt
 .global pgenable
 .global multiboot
+.global int0_asm_handler
+.global int14_asm_handler
 
 .type	_start,	@function
 _start:
@@ -86,12 +89,42 @@ load_gdt:
 
 .type	pgenable	@function
 pgenable:
-	movl    0x4(%esp), %eax
-	mov	%eax, %cr3
+	movl    0x4(%esp),	%eax
+	mov	%eax,		%cr3
 
-	mov	%cr0, %eax
-	or	$0x80000000, %eax
-	mov	%eax, %cr0
+	mov	%cr0,		%eax
+	or	$0x80000000,	%eax
+	mov	%eax,		%cr0
 	jmp	.Pfinish
 .Pfinish:
 	ret
+
+/* load_idt -- loads Interrupt Descriptor Table to IDTR. */
+
+.type	load_idt	@function
+load_idt:
+	movl	0x4(%esp),	%eax
+	lidt	(%eax)
+	ret
+
+.type	int0_asm_handler	@function
+int0_asm_handler:
+	mov	%cr2,	%eax
+	pushl	%eax
+	call	zerodivision
+	addl	$4,	%esp
+
+	iret
+
+.section	.int14
+.type	int14_asm_handler	@function
+int14_asm_handler:
+	mov	%cr2,	%eax
+	popl	%ebx
+	pushl	%eax
+	pushl	%ebx
+	call	pgfault
+	addl	$4,	%esp
+
+	iret
+

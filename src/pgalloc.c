@@ -1,26 +1,30 @@
 #include "defs.h"
 #include "kernel.h"
 #include "mb_parce.h"
+#include "interrupt.h"
 
 #include "pgalloc.h"
-
-
-#define PGDIR_PRESENT		1
-#define PGDIR_RW		(1 << 1)
-#define PGDIR_USER		(1 << 2)
-#define PGDIR_ACCESS		(1 << 5)
-#define PGDIR_DIRTY		(1 << 6)
-#define PGDIR_ALLOCATED		(1 << 9)
 
 
 size_t pgdir[1024] __attribute__ ((aligned(4096))) = {0};
 size_t pgtables[1024][1024] __attribute__ ((aligned(4096))) = {{0}};
 int nextdir;
+size_t kerend;
 
 
 extern char end;
 extern void pgenable(size_t *);
+extern void int14_asm_handler();
 
+void
+pgfault(size_t cr2, size_t error)
+{
+	if (!(error & 0))
+		pgmap(cr2, cr2, PGDIR_PRESENT|PGDIR_ALLOCATED|PGDIR_RW);
+
+//	iprintf("\n\tPage Fault\n");
+//	iprintf("\terror = 0x%x; cr2 = %p\n\n", error, cr2);
+}
 
 void *
 pgalloc()
@@ -93,8 +97,8 @@ pginfo()
 
 		for (j = 0; j < 1024; j++) {
 			if (flags != (pgaddr[j] & 0xf9f)) {
-				iprintf("\tarea from 0x%08x to 0x%08x with flags %03x\n",
-						start, ((i << 10) + j) << 12, flags);
+				if (flags & PGDIR_PRESENT && ((i << 10) + j) << 12)
+					iprintf("\tarea from 0x%08x to 0x%08x with flags %03x\n", start, ((i << 10) + j) << 12, flags);
 				flags = pgaddr[j] & 0xf9f;
 				start = ((i << 10) + j) << 12;
 			}
@@ -107,8 +111,9 @@ pginfo()
 		}
 	}
 
-	iprintf("\tarea from 0x%08x to 0x%08x with flags %03x\n",
-			start, ((i << 10) + j) << 12, flags);
+	if (flags & PGDIR_PRESENT && ((i << 10) + j) << 12)
+		iprintf("\tarea from 0x%08x to 0x%08x with flags %03x\n",
+				start, ((i << 10) + j) << 12, flags);
 
 	total = used + free;
 
@@ -120,23 +125,25 @@ pginfo()
 			(used >> 20) % 1024, (used >> 10) % 1024, used % 1024);
 }
 
+int a = 0;
+
 void
-pgmap(size_t phys, void *virt, size_t flags)
+pgmap(size_t phys, size_t virt, size_t flags)
 {
-	size_t *pgaddr;
+	register size_t *pgaddr;
 
-	if (!(pgdir[(size_t)virt >> 22] & PGDIR_PRESENT))
-		pgdir[(size_t)virt >> 22] = ((size_t)pgtables[nextdir++] &
-							0xfffff000) | flags;
+	if (!(pgdir[virt >> 22] & PGDIR_PRESENT))
+		pgdir[virt >> 22] = ((size_t)pgtables[nextdir++] &
+				0xfffff000) | flags;
 
-	pgaddr = (size_t *)(pgdir[(size_t)virt >> 22] & 0xfffff000);
-	pgaddr[((size_t)virt >> 12) % 1024] = phys | flags;
+	pgaddr = (size_t *)(pgdir[virt >> 22] & 0xfffff000);
+	pgaddr[(virt >> 12) % 1024] = phys | flags;
 }
 
 void
 pginit(struct mm_area **mmap, int mmap_len)
 {
-	size_t i, j, kerend;
+	size_t i, j;
 
 	kerend = (size_t)&end;
 	kerend += (kerend % 0x1000 ? 0x1000 : 0) - kerend % 0x1000;
@@ -147,11 +154,20 @@ pginit(struct mm_area **mmap, int mmap_len)
 	/* Mapping memory from mmap */
 	for (i = 0; (int)i < mmap_len; i++)
 		for (j = mmap[i]->beg; j < (mmap[i]->end & 0xfffff000); j += 0x1000)
-			pgmap(j, (void *)j, PGDIR_PRESENT|PGDIR_RW);
+			pgmap(j, j, PGDIR_PRESENT|PGDIR_RW);
 
 	/* Making kernel not allocatable */
 	for (i = 0; i <= kerend; i += 0x1000)
-		pgmap(i, (void *)i, PGDIR_PRESENT|PGDIR_ALLOCATED|PGDIR_RW);
+		pgmap(i, i, PGDIR_PRESENT|PGDIR_ALLOCATED|PGDIR_RW);
+
+	pgmap((size_t)pgdir, (size_t)pgdir, PGDIR_PRESENT|PGDIR_ALLOCATED|PGDIR_RW);
+
+	for (i = 0; i < 1024; i++)
+		pgmap((size_t)pgtables[i], (size_t)pgtables[i], PGDIR_PRESENT|PGDIR_ALLOCATED|PGDIR_RW);
+
+	int_add(14, 1, TRAP_GATE, 0, int14_asm_handler);
+
+//	pginfo();
 
 	pgenable(pgdir);
 
