@@ -4,13 +4,13 @@
 
 
 inline int
-com_trans_empty(uint16_t port)
+com_trans_empty(size_t port)
 {
 	return !(inb(port + 5) & 0x20);
 }
 
 inline void
-com_putc(uint16_t port, int c)
+com_putc(size_t port, int c)
 {
 	while (com_trans_empty(port))
 		;
@@ -19,20 +19,20 @@ com_putc(uint16_t port, int c)
 }
 
 void
-com_puts(uint16_t port, char *s)
+com_puts(size_t port, char *s)
 {
 	while (*s != '\0')
 		com_putc(port, *s++);
 }
 
 inline int
-com_fifo_empty(uint16_t port)
+com_fifo_empty(size_t port)
 {
 	return !(inb(port + 5) & 0x1);
 }
 
 int
-com_getc(uint16_t port)
+com_getc(size_t port)
 {
 	while (com_fifo_empty(port))
 		;
@@ -41,7 +41,7 @@ com_getc(uint16_t port)
 }
 
 void
-com_init(uint16_t port)
+com_init(size_t port)
 {
 	// Disable DLAB
 	outb(port + 3, 0x00);

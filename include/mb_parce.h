@@ -13,7 +13,7 @@ struct mb_info {
 	uint32_t mem_upper;
 
 	/* field that says from what device you've booted */
-	uint8_t *boot_device;
+	uint8_t boot_device[4];
 
 	/* command line, C like string */
 	char *cmdline;
