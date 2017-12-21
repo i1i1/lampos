@@ -10,24 +10,22 @@ sources = $(addprefix src/, $(src))
 headers = vga.h pgalloc.h sort.h mb_parce.h com.h buddyalloc.h interrupt.h
 
 obj = $(src:.c=.o)
-objects = $(addprefix build/, $(obj))
+objects = $(addprefix build/object/, $(obj))
 
 
-all: boot.iso
+all: premake boot.iso
+
+premake:
+	@mkdir -p build/object/
 
 test: all
-	@echo
-	@echo	"				TEST"
-	@echo
-	@qemu-system-i386 -kernel boot.bin -nographic -m 128M &
-	@sleep 1
-	@killall qemu-system-i386 -q
+	@qemu-system-i386 -cdrom boot.iso -m 128M &
 
-build/%.o: kernel.h defs.h
+build/object/%.o: kernel.h defs.h
 
 vga.o: include/vga.h
 
-build/%.o: src/%.c
+build/object/%.o: src/%.c
 	$(CC) $(CFLAGS) -c -T $(KERNEL_LD) -nostdlib -ffreestanding -o $@ $<
 
 boot.bin: src/boot.S $(objects)
@@ -42,7 +40,7 @@ boot.iso: boot.bin
 	echo "title LAMPOS Dev Starter Kit Kernel" >> iso/boot/grub/menu.lst
 	echo "kernel /boot/boot.bin" >> iso/boot/grub/menu.lst
 	$(GENISOIMAGE) -R -b boot/grub/stage2_eltorito -no-emul-boot\
-		-boot-load-size 4 -boot-info-table -quiet -o boot.iso iso/
+		-boot-load-size 4 -boot-info-table -o boot.iso iso/
 
 clean:
 	-rm -rf boot.bin boot.iso
