@@ -6,24 +6,34 @@
 #include "pgalloc.h"
 
 
-size_t pgdir[1024] __attribute__ ((aligned(4096))) = {0};
-size_t pgtables[1024][1024] __attribute__ ((aligned(4096))) = {{0}};
-int nextdir;
+size_t *pgdir;
+const size_t *tempopage;
 size_t kerend;
 
 
 extern char end;
-extern void pgenable(size_t *);
-extern void int14_asm_handler();
+extern void pgreset();
+
+void *
+tempomap(size_t addr)
+{
+	size_t *pgaddr;
+
+	pgaddr = (void *)(PGDIR + 0x2000);
+	pgaddr[((size_t)tempopage >> 12) % 1024] =
+		addr & ((~0xfff)|PG_PRESENT|PG_RW|PG_ALLOCATED);
+
+	return (void *)tempopage;
+}
 
 void
 pgfault(size_t cr2, size_t error)
 {
-	if (!(error & 0))
-		pgmap(cr2, cr2, PGDIR_PRESENT|PGDIR_ALLOCATED|PGDIR_RW);
+	iprintf("\nPage Fault:\n\n");
+	iprintf("\terror = 0x%x; cr2 = %p\n\n", error, cr2);
+	iprintf("Stopping Kernel\n\n", error, cr2);
 
-//	iprintf("\n\tPage Fault\n");
-//	iprintf("\terror = 0x%x; cr2 = %p\n\n", error, cr2);
+	for (;;);
 }
 
 void *
@@ -33,15 +43,15 @@ pgalloc()
 	size_t *pgaddr;
 
 	for (i = 0; i < 1024; i++) {
-		if (!(pgdir[i] & PGDIR_PRESENT))
+		if (!(pgdir[i] & PG_PRESENT))
 			continue;
 
-		pgaddr = (size_t *)(pgdir[i] & 0xfffff000);
+		pgaddr = (size_t *)(pgdir[i] & (~0xfff));
 
 		for (j = 0; j < 1024; j++)
-			if (pgaddr[j] & PGDIR_PRESENT &&
-					!(pgaddr[j] & PGDIR_ALLOCATED)) {
-				pgaddr[j] |= PGDIR_ALLOCATED;
+			if (pgaddr[j] & PG_PRESENT &&
+					!(pgaddr[j] & PG_ALLOCATED)) {
+				pgaddr[j] |= PG_ALLOCATED;
 				return (void *)((i << 22) + (j << 12));
 			}
 	}
@@ -54,10 +64,10 @@ virttophys(void *pg)
 {
 	size_t *pgaddr;
 
-	if (pgdir[(size_t)pg >> 22] & PGDIR_PRESENT) {
-		pgaddr = (size_t *)(pgdir[(size_t)pg >> 22] & 0xfffff000);
+	if (pgdir[(size_t)pg >> 22] & PG_PRESENT) {
+		pgaddr = (size_t *)(pgdir[(size_t)pg >> 22] & (~0xfff));
 
-		return pgaddr[((size_t)pg >> 12) % 1024] & 0xfffff000;
+		return pgaddr[((size_t)pg >> 12) % 1024] & (~0xfff);
 	}
 
 	return 0;
@@ -68,109 +78,165 @@ pgfree(void *pg)
 {
 	size_t *pgaddr;
 
-	if (pgdir[(size_t)pg >> 22] & PGDIR_PRESENT) {
-		pgaddr = (size_t *)(pgdir[(size_t)pg >> 22] & 0xfffff000);
+	if (pgdir[(size_t)pg >> 22] & PG_PRESENT) {
+		pgaddr = (size_t *)(pgdir[(size_t)pg >> 22] & ~(0xfff));
 
-		pgaddr[((size_t)pg >> 12) % 1024] &= ~PGDIR_ALLOCATED;
+		pgaddr[((size_t)pg >> 12) % 1024] &= ~PG_ALLOCATED;
 	}
 }
 
 void
 pginfo()
 {
-	size_t free, used, total;
-	size_t *pgaddr;
-	size_t start, flags;
+	size_t free, used, unmapped, total;
+	size_t start, flags, *pgaddr;
 	int i, j;
 
-	free = used = 0;
+	free = used = unmapped = 0;
 	start = 0;
-	flags = 0x203;
+
+	if (pgdir[0] & PG_PRESENT) {
+		pgaddr = tempomap(pgdir[0]);
+		flags = pgaddr[0] & 0xf9f;
+	}
+	else
+		flags = 0;
 
 	iprintf("\n\nPAGE ALLOCATOR INFO:\n");
 
 	for (i = 0; i < 1024; i++) {
-		if (!(pgdir[i] & PGDIR_PRESENT))
+		if (!(pgdir[i] & PG_PRESENT)) {
+			unmapped += 0x400000;
+			if (flags) {
+				iprintf("\t[0x%08x; 0x%08x) flags=%03x\n",
+						start, i << 22, flags);
+				start = i << 22;
+				flags = 0;
+			}
 			continue;
+		}
 
-		pgaddr = (size_t *)(pgdir[i] & 0xfffff000);
+		pgaddr = tempomap(pgdir[i]);
 
 		for (j = 0; j < 1024; j++) {
 			if (flags != (pgaddr[j] & 0xf9f)) {
-				if (flags & PGDIR_PRESENT && ((i << 10) + j) << 12)
-					iprintf("\tarea from 0x%08x to 0x%08x with flags %03x\n", start, ((i << 10) + j) << 12, flags);
+				iprintf("\t[0x%08x; 0x%08x) flags=%03x\n",
+						start, ((i << 10) + j) << 12, flags);
 				flags = pgaddr[j] & 0xf9f;
 				start = ((i << 10) + j) << 12;
 			}
-			if (pgaddr[j] & PGDIR_PRESENT) {
-				if (pgaddr[j] & PGDIR_ALLOCATED)
+			if (pgaddr[j] & PG_PRESENT)
+				if (pgaddr[j] & PG_ALLOCATED)
 					used += 0x1000;
 				else
 					free += 0x1000;
-			}
+			else
+				unmapped += 0x1000;
 		}
 	}
 
-	if (flags & PGDIR_PRESENT && ((i << 10) + j) << 12)
-		iprintf("\tarea from 0x%08x to 0x%08x with flags %03x\n",
-				start, ((i << 10) + j) << 12, flags);
+	iprintf("\t[0x%08x; 0x%08x] flags=%03x\n", start, 0xffffffff, flags);
 
 	total = used + free;
+	{
+	iprintf("\n\tunmap:\t");
+	if (unmapped >> 30)
+		iprintf("%d Gb\t", unmapped >> 30);
+	if ((unmapped >> 20) % 1024)
+		iprintf("%d Mb\t", (unmapped >> 20) % 1024);
+	if ((unmapped >> 10) % 1024)
+		iprintf("%d Kb\t", (unmapped >> 10) % 1024);
+	if (unmapped % 1024)
+		iprintf("%d b", unmapped % 1024);
+	iprintf("\n\n");
 
-	iprintf("\n\ttotal:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n", total >> 30,\
-		(total >> 20) % 1024, (total >> 10) % 1024, total % 1024);
-	iprintf("\tfree:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n", free >> 30,\
-			(free >> 20) % 1024, (free >> 10) % 1024, free % 1024);
-	iprintf("\tused:\t%d Gb\t%d Mb\t%d Kb\t%d bytes\n\n", used >> 30,\
-			(used >> 20) % 1024, (used >> 10) % 1024, used % 1024);
+	iprintf("\ttotal:\t");
+	if (total >> 30)
+		iprintf("%d Gb\t", total >> 30);
+	if ((total >> 20) % 1024)
+		iprintf("%d Mb\t", (total >> 20) % 1024);
+	if ((total >> 10) % 1024)
+		iprintf("%d Kb\t", (total >> 10) % 1024);
+	if (total % 1024)
+		iprintf("%d b", total % 1024);
+	iprintf("\n");
+
+	iprintf("\tfree:\t");
+	if (free >> 30)
+		iprintf("%d Gb\t", free >> 30);
+	if ((free >> 20) % 1024)
+		iprintf("%d Mb\t", (free >> 20) % 1024);
+	if ((free >> 10) % 1024)
+		iprintf("%d Kb\t", (free >> 10) % 1024);
+	if (free % 1024)
+		iprintf("%d b", free % 1024);
+	iprintf("\n");
+
+	iprintf("\tused:\t");
+	if (used >> 30)
+		iprintf("%d Gb\t", used >> 30);
+	if ((used >> 20) % 1024)
+		iprintf("%d Mb\t", (used >> 20) % 1024);
+	if ((used >> 10) % 1024)
+		iprintf("%d Kb\t", (used >> 10) % 1024);
+	if (used % 1024)
+		iprintf("%d b", used % 1024);
+	iprintf("\n");
+	}
 }
 
-int a = 0;
+void
+pgtablemap(size_t phys, size_t virt, size_t flags)
+{
+	pgdir[virt >> 22] = phys | flags;
+}
 
 void
 pgmap(size_t phys, size_t virt, size_t flags)
 {
-	register size_t *pgaddr;
+	size_t *pgaddr;
 
-	if (!(pgdir[virt >> 22] & PGDIR_PRESENT))
-		pgdir[virt >> 22] = ((size_t)pgtables[nextdir++] &
-				0xfffff000) | flags;
+	if (!(pgdir[virt >> 22] & PG_PRESENT))
+		return;
 
-	pgaddr = (size_t *)(pgdir[virt >> 22] & 0xfffff000);
+	pgaddr = tempomap(pgdir[virt >> 22]);
+
 	pgaddr[(virt >> 12) % 1024] = phys | flags;
 }
 
 void
 pginit(struct mm_area **mmap, int mmap_len)
 {
-	size_t i, j;
+	size_t i;
+	pgdir = (void *)PGDIR;
 
 	kerend = (size_t)&end;
 	kerend += (kerend % 0x1000 ? 0x1000 : 0) - kerend % 0x1000;
-	nextdir = 0;
+	tempopage = (size_t *)(PGDIR + 0x3000);
 
 	iprintf("\tkerend = %p\n", kerend);
 
-	/* Mapping memory from mmap */
-	for (i = 0; (int)i < mmap_len; i++)
-		for (j = mmap[i]->beg; j < (mmap[i]->end & 0xfffff000); j += 0x1000)
-			pgmap(j, j, PGDIR_PRESENT|PGDIR_RW);
+	pginfo();
 
-	/* Making kernel not allocatable */
-	for (i = 0; i <= kerend; i += 0x1000)
-		pgmap(i, i, PGDIR_PRESENT|PGDIR_ALLOCATED|PGDIR_RW);
-
-	pgmap((size_t)pgdir, (size_t)pgdir, PGDIR_PRESENT|PGDIR_ALLOCATED|PGDIR_RW);
-
+	/*
 	for (i = 0; i < 1024; i++)
-		pgmap((size_t)pgtables[i], (size_t)pgtables[i], PGDIR_PRESENT|PGDIR_ALLOCATED|PGDIR_RW);
+		if (pgdir[i])
+			iprintf("\t%i %p\n", i, pgdir[i]);
+	*/
 
-	int_add(14, 1, TRAP_GATE, 0, int14_asm_handler);
+//	pgtablemap(0, 0, 0);
+	pgdir[0] = 0;
+	pgtablemap(0, 1 << 22, 0);
 
-//	pginfo();
+	for (i = KERNEL_BASE; i <= kerend; i += 0x1000)
+		pgmap(i - KERNEL_BASE, i, PG_PRESENT|PG_RW|PG_ALLOCATED);
 
-	pgenable(pgdir);
+	for (; i < PGDIR; i += 0x1000)
+		pgmap(0, i, 0);
 
-	iprintf("\tHELLO PAGING WORLD\n");
+	for (; i <= PGDIR + 0x3000; i += 0x1000)
+		pgmap(i - KERNEL_BASE, i, PG_PRESENT|PG_RW|PG_ALLOCATED);
+
+	pginfo();
 }
 

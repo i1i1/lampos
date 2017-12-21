@@ -9,6 +9,7 @@ extern char end;
 
 extern void load_idt(void *idt);
 extern void int0_asm_handler();
+extern void int14_asm_handler();
 extern void idt_init();
 
 void
@@ -39,7 +40,8 @@ int_init()
 	idt.limit = 256 * 8 - 1;
 	idt.intr = intr;
 
-	int_add( 0, 1, INT_GATE, 0, int0_asm_handler);
+	int_add( 0, 1, INT_GATE	, 0, int0_asm_handler);
+	int_add(14, 1, TRAP_GATE, 0, int14_asm_handler);
 
 	load_idt(&idt);
 }

@@ -1,6 +1,10 @@
 #ifndef _DEFS_H_
 #define _DEFS_H_
 
+#define KERNEL_BASE		0xC0000000
+
+#define PGDIR			(KERNEL_BASE + 0x400000)
+
 /* VGA text buffer memory mapped address. */
 #define VGA_BUFFER_ADDR		0xB8000
 
@@ -43,6 +47,7 @@
 						a = b;				\
 						b = c;				\
 					} while(0)
+
 #endif
 
 

@@ -108,13 +108,13 @@ mb_parse(struct mb_info *mb, struct mm_area ***mm, int *mmlen)
 
 	}
 	if (mb->flags & MB_BD_FLAG) {
-		if (*mb->boot_device)
-			iprintf("\tYou booted from hard drive\n");
+		if (mb->boot_device[3] == 0x80)
+			iprintf("\tBios at hard drive\n");
 		else
-			iprintf("\tYou booted from floppy\n");
+			iprintf("\tBios at floppy\n");
 
-		for (i = 1; i < 4; i++)
-			if (*(mb->boot_device + i) == 0xff)
+		for (i = 0; i < 3; i++)
+			if (mb->boot_device[2 - i] == 0xff)
 				iprintf("\tUnused partitioning %d\n", i);
 			else
 				iprintf("\tUsed partitioning %d\n", i);

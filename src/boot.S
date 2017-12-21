@@ -9,8 +9,10 @@
 #define KERNEL_STACK	4096
 
 .section .bss
-kernel_stack:
-.space KERNEL_STACK
+stack_down:
+.align	16
+.space	KERNEL_STACK
+stack_top:
 
 .section .multiboot
 multiboot:
@@ -20,19 +22,79 @@ multiboot:
 
 .section .text
 
-.global _start
 .global cli
 .global sti
 .global load_gdt
 .global load_idt
-.global pgenable
+.global pgreset
 .global multiboot
 .global int0_asm_handler
 .global int14_asm_handler
 
+.global _start
+.global	start
+.set	start,	_start - KERNEL_BASE
+
 .type	_start,	@function
 _start:
-	mov	$kernel_stack,	%esp
+	mov	$(PGDIR-KERNEL_BASE+0x1000),	%ecx
+	xor	%edi,				%edi
+
+	/* Creating pgtable for first 4 Mb */
+4:
+	mov	%edi,	%edx	# index
+	shl	$12,	%edx	# multiply by 4096
+	or	$3,	%edx
+	mov	%edx,	(%ecx, %edi, 4)
+
+	inc	%edi
+	cmp	$1024,	%edi
+	jb	4b
+
+	mov	$(PGDIR-KERNEL_BASE+0x2000),	%ecx
+	xor	%edi,	%edi
+
+	/* Creating pgtable for second 4 Mb */
+8:
+	mov	%edi,	%edx
+	shl	$12,	%edx
+	add	$0x400003,	%edx
+	mov	%edx,	(%ecx,	%edi,	4)
+
+	inc	%edi
+	cmp	$1024,	%edi
+	jb	8b
+
+	/* Enabling paging */
+	mov	$(PGDIR-KERNEL_BASE),	%ecx
+
+	/* Mapping [0m; 8m) to [0m; 8m) */
+	movl	$(PGDIR-KERNEL_BASE+0x1003),	(%ecx)
+	movl	$(PGDIR-KERNEL_BASE+0x2003),	0x4(%ecx)
+
+	mov	$(KERNEL_BASE >> 22),	%edx
+
+	/* Mapping [0m; 4m) to [3g; 3g4m) */
+	movl	$(PGDIR-KERNEL_BASE+0x1003),	(%ecx,	%edx,	4)
+	inc	%edx
+	movl	$(PGDIR-KERNEL_BASE+0x2003),	(%ecx,	%edx,	4)
+
+	mov	%ecx,		%cr3
+	mov	%cr0,		%ecx
+	or	$0x80000000,	%ecx
+	mov	%ecx,		%cr0
+
+	jmp	higher_half
+higher_half:
+
+	//mov	$(PGDIR), %ecx
+	//movl	$0, (%ecx)
+	//movl	$0, 0x4(%ecx)
+
+	//mov	%cr3, %ecx
+	//mov	%ecx, %cr3
+
+	mov	$stack_top,	%esp
 
 	/*
 	 * Call kernel C entry point function.
@@ -85,18 +147,15 @@ load_gdt:
 	mov	%eax,	%es
 	mov	%eax,	%fs
 	mov	%eax,	%gs
+
 	ret
 
-.type	pgenable	@function
-pgenable:
-	movl    0x4(%esp),	%eax
-	mov	%eax,		%cr3
-
-	mov	%cr0,		%eax
-	or	$0x80000000,	%eax
-	mov	%eax,		%cr0
-	jmp	.Pfinish
-.Pfinish:
+.type	pgreset		@function
+pgreset:
+	pushl	%eax
+	mov	%cr3, %eax
+	mov	%eax, %cr3
+	popl	%eax
 	ret
 
 /* load_idt -- loads Interrupt Descriptor Table to IDTR. */
@@ -116,7 +175,6 @@ int0_asm_handler:
 
 	iret
 
-.section	.int14
 .type	int14_asm_handler	@function
 int14_asm_handler:
 	mov	%cr2,	%eax
@@ -124,7 +182,7 @@ int14_asm_handler:
 	pushl	%eax
 	pushl	%ebx
 	call	pgfault
-	addl	$4,	%esp
+	addl	$8,	%esp
 
 	iret
 
