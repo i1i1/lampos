@@ -25,6 +25,7 @@ tempomap(size_t addr)
 	pgaddr = (void *)PGTBL1;
 	pgaddr[((size_t)tempopage >> 12) % 1024] =
 		addr & ((~0xfff)|PG_PRESENT|PG_RW|PG_ALLOCATED);
+	pgreset();
 
 	return (void *)tempopage;
 }
@@ -36,18 +37,20 @@ tempounmap()
 
 	pgaddr = (void *)PGTBL1;
 	pgaddr[((size_t)tempopage >> 12) % 1024] = 0;
+
+	pgreset();
 }
 
 size_t
 pgdirflags(void *virt)
 {
-	return *(size_t *)(PGDIR + ((size_t)virt >> 22));
+	return *(pgdir + ((size_t)virt >> 22));
 }
 
 void
 pgfault(size_t cr2, size_t error)
 {
-//	iprintf("\nPage Fault:\n\n");
+	iprintf("\nPage Fault:\n\n");
 	iprintf("\terror = 0x%x; cr2 = %p\n\n", error, cr2);
 	iprintf("Stopping Kernel\n\n", error, cr2);
 
@@ -153,6 +156,8 @@ pginfo()
 		}
 	}
 
+	tempounmap();
+
 	iprintf("\t[0x%08x; 0x%08x] flags=%03x\n", start, 0xffffffff, flags);
 
 	total = used + free;
@@ -217,9 +222,12 @@ pgmap(size_t phys, size_t virt, size_t flags)
 	if (!(pgdir[virt >> 22] & PG_PRESENT))
 		return;
 
+	iprintf("\tMapping %p to %p with %03x\n", phys, virt, flags);
+
 	pgaddr = tempomap(pgdir[virt >> 22]);
 
 	pgaddr[(virt >> 12) % 1024] = phys | flags;
+	tempounmap();
 }
 
 void
@@ -229,27 +237,6 @@ pginit(size_t kerend)
 
 	pgdir = (void *)PGDIR;
 	tempopage = (size_t *)PGTEMPO;
-
-	pginfo();
-
-	pgdirunmap(0);
-	pgdirunmap(1 << 22);
-
-	for (i = KERNEL_BASE; i <= kerend; i += 0x1000)
-		pgmap(i - KERNEL_BASE, i, PG_PRESENT|PG_RW);
-
-	iprintf("\t at %p\n", i);
-
-	for (; i < PGDIR; i += 0x1000)
-		pgunmap(i);
-
-	for (; i <= PGTEMPO; i += 0x1000)
-		pgmap(i - KERNEL_BASE, i, PG_PRESENT|PG_RW);
-
-	for (; i < KERNEL_BASE + (2 << 22); i += 0x1000)
-		pgunmap(i);
-
-	tempounmap();
 
 	pginfo();
 }
@@ -265,8 +252,6 @@ kmeminit(struct mm_area **mmap, int mmap_len)
 	iprintf("\tkerend = %p\n", kerend);
 
 	pginit(kerend);
-
 	pgreset();
-	iprintf("HERE\n");
 }
 

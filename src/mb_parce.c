@@ -149,14 +149,14 @@ mb_parse(struct mb_info *mb, struct mm_area ***mm, int *mmlen)
 		for (i = 0; i < buflen; i++)
 			buf[i] = arr + i;
 
-		area_parse(mb->mmap_addr, mb->mmap_length, buf, &buflen);
+		area_parse(mb->mmap_addr + KERNEL_BASE, mb->mmap_length, buf, &buflen);
 
 		*mm = buf;
 		*mmlen = buflen;
 
 	}
-	if (mb->flags & MB_BOOT_FLAG)
-		iprintf("\tbootloader name:\"%s\"\n", mb->bootloader);
+//	if (mb->flags & MB_BOOT_FLAG)
+//		iprintf("\tbootloader name:\"%p\"\n", mb->bootloader + KERNEL_BASE);
 	/*
 	if (mb->flags & MB__FLAG) {
 	}*/

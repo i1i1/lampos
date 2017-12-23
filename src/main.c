@@ -32,11 +32,11 @@ main(size_t cr0, struct mb_info *mb)
 	int_init();
 
 	iprintf("\tmb = %p\n", mb);
+	iprintf("\tend = %p\n", &end);
 
 	mb_parse(mb, &mm, &mmlen);
 
 	kmeminit(mm, mmlen);
-
 	for (;;);
 
 	/* Allocating 8 * 1024 Pages(32 MB total) to allocator */

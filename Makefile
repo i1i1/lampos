@@ -19,7 +19,7 @@ test: all
 	@echo
 	@echo	"				TEST"
 	@echo
-	@qemu-system-i386 -kernel boot.bin -nographic -m 128M &
+	@qemu-system-i386 -kernel boot.bin -nographic -m 3600M 2>/dev/null &
 	@sleep 1
 	@killall qemu-system-i386 -q
 

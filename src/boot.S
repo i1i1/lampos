@@ -37,10 +37,15 @@ multiboot:
 
 .type	_start,	@function
 _start:
+	movl	$(end),	%eax
+	shl	$10,	%eax
+	shr	$22,	%eax
+	inc	%eax
+
+	/* Creating pgtable for first 4 Mb */
 	mov	$(PGTBL0-KERNEL_BASE),	%ecx
 	xor	%edi,			%edi
 
-	/* Creating pgtable for first 4 Mb */
 4:
 	mov	%edi,	%edx	# index
 	shl	$12,	%edx	# multiply by 4096
@@ -48,13 +53,15 @@ _start:
 	mov	%edx,	(%ecx, %edi, 4)
 
 	inc	%edi
-	cmp	$1024,	%edi
+
+	cmp	%eax,	%edi
 	jb	4b
 
+	/* Creating pgtable for second 4 Mb */
+	mov	$3,			%eax
 	mov	$(PGTBL1-KERNEL_BASE),	%ecx
 	xor	%edi,			%edi
 
-	/* Creating pgtable for second 4 Mb */
 8:
 	mov	%edi,		%edx
 	shl	$12,		%edx
@@ -62,7 +69,7 @@ _start:
 	mov	%edx,		(%ecx,	%edi,	4)
 
 	inc	%edi
-	cmp	$1024,	%edi
+	cmp	%eax,	%edi
 	jb	8b
 
 	/* Enabling paging */
@@ -74,7 +81,7 @@ _start:
 
 	mov	$(KERNEL_BASE >> 22),	%edx
 
-	/* Mapping [0m; 4m) to [3g; 3g4m) */
+	/* Mapping [0m; 8m) to [3g; 3g8m) */
 	movl	$(PGTBL0-KERNEL_BASE+0x3),	(%ecx,	%edx,	4)
 	inc	%edx
 	movl	$(PGTBL1-KERNEL_BASE+0x3),	(%ecx,	%edx,	4)
@@ -88,13 +95,21 @@ _start:
 	jmp	*%ecx
 higher_half:
 
+	mov	$(PGDIR),	%ecx
+	movl	$0,		(%ecx)
+	movl	$0,		0x4(%ecx)
+
+	mov	%cr3, %ecx
+	mov	%ecx, %cr3
+
 	mov	$stack_top,	%esp
 
 	/*
 	 * Call kernel C entry point function.
 	 */
 
-	mov	%cr0,	%eax
+	mov	%cr0,		%eax
+	addl	$(KERNEL_BASE),	%ebx
 	push	%ebx
 	push	%eax
 
