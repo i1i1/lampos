@@ -37,8 +37,8 @@ multiboot:
 
 .type	_start,	@function
 _start:
-	mov	$(PGDIR-KERNEL_BASE+0x1000),	%ecx
-	xor	%edi,				%edi
+	mov	$(PGTBL0-KERNEL_BASE),	%ecx
+	xor	%edi,			%edi
 
 	/* Creating pgtable for first 4 Mb */
 4:
@@ -51,15 +51,15 @@ _start:
 	cmp	$1024,	%edi
 	jb	4b
 
-	mov	$(PGDIR-KERNEL_BASE+0x2000),	%ecx
-	xor	%edi,	%edi
+	mov	$(PGTBL1-KERNEL_BASE),	%ecx
+	xor	%edi,			%edi
 
 	/* Creating pgtable for second 4 Mb */
 8:
-	mov	%edi,	%edx
-	shl	$12,	%edx
+	mov	%edi,		%edx
+	shl	$12,		%edx
 	add	$0x400003,	%edx
-	mov	%edx,	(%ecx,	%edi,	4)
+	mov	%edx,		(%ecx,	%edi,	4)
 
 	inc	%edi
 	cmp	$1024,	%edi
@@ -69,30 +69,24 @@ _start:
 	mov	$(PGDIR-KERNEL_BASE),	%ecx
 
 	/* Mapping [0m; 8m) to [0m; 8m) */
-	movl	$(PGDIR-KERNEL_BASE+0x1003),	(%ecx)
-	movl	$(PGDIR-KERNEL_BASE+0x2003),	0x4(%ecx)
+	movl	$(PGTBL0-KERNEL_BASE+0x3),	(%ecx)
+	movl	$(PGTBL1-KERNEL_BASE+0x3),	0x4(%ecx)
 
 	mov	$(KERNEL_BASE >> 22),	%edx
 
 	/* Mapping [0m; 4m) to [3g; 3g4m) */
-	movl	$(PGDIR-KERNEL_BASE+0x1003),	(%ecx,	%edx,	4)
+	movl	$(PGTBL0-KERNEL_BASE+0x3),	(%ecx,	%edx,	4)
 	inc	%edx
-	movl	$(PGDIR-KERNEL_BASE+0x2003),	(%ecx,	%edx,	4)
+	movl	$(PGTBL1-KERNEL_BASE+0x3),	(%ecx,	%edx,	4)
 
 	mov	%ecx,		%cr3
 	mov	%cr0,		%ecx
 	or	$0x80000000,	%ecx
 	mov	%ecx,		%cr0
 
-	jmp	higher_half
+	lea	(higher_half), %ecx
+	jmp	*%ecx
 higher_half:
-
-	//mov	$(PGDIR), %ecx
-	//movl	$0, (%ecx)
-	//movl	$0, 0x4(%ecx)
-
-	//mov	%cr3, %ecx
-	//mov	%ecx, %cr3
 
 	mov	$stack_top,	%esp
 

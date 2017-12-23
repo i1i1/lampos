@@ -24,7 +24,7 @@ void pginfo();
 /* Mapper of pages */
 void pgmap(size_t phys, size_t virt, size_t flags);
 
-void pginit(struct mm_area **mmap, int mmap_len);
+void kmeminit(struct mm_area **mmap, int mmap_len);
 
 
 #endif /* _PHYSPGALLOC_H_ */

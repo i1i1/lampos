@@ -4,9 +4,12 @@
 #define KERNEL_BASE		0xC0000000
 
 #define PGDIR			(KERNEL_BASE + 0x400000)
+#define PGTBL0			(PGDIR + 0x1000)
+#define PGTBL1			(PGDIR + 0x2000)
+#define PGTEMPO			(PGDIR + 0x3000)
 
 /* VGA text buffer memory mapped address. */
-#define VGA_BUFFER_ADDR		0xB8000
+#define VGA_BUFFER_ADDR		(KERNEL_BASE + 0xB8000)
 
 /* BIOS Data Area */
 #define	BDA_BASE_PORT_ADDRESS	0x0463

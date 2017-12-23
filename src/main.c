@@ -34,7 +34,8 @@ main(size_t cr0, struct mb_info *mb)
 	iprintf("\tmb = %p\n", mb);
 
 	mb_parse(mb, &mm, &mmlen);
-	pginit(mm, mmlen);
+
+	kmeminit(mm, mmlen);
 
 	for (;;);
 

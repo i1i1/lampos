@@ -95,6 +95,7 @@ mb_parse(struct mb_info *mb, struct mm_area ***mm, int *mmlen)
 {
 	unsigned int i;
 
+	/*
 	iprintf("\n\t");
 
 	for (i = 11; i != 0; i--)
@@ -140,6 +141,7 @@ mb_parse(struct mb_info *mb, struct mm_area ***mm, int *mmlen)
 		iprintf("\tsymbols 2 shndx %d\n", mb->symbols.b.shndx);
 
 	}
+	*/
 	if (mb->flags & MB_MMAP_FLAG) {
 		unsigned int buflen = 16;
 		struct mm_area arr[buflen], *buf[buflen];

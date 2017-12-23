@@ -6,9 +6,12 @@
 #include "pgalloc.h"
 
 
+#define	pgdirunmap(virt)	pgdirmap(0, virt, 0)
+#define	pgunmap(virt)		pgmap(0, virt, 0)
+
+
 size_t *pgdir;
 const size_t *tempopage;
-size_t kerend;
 
 
 extern char end;
@@ -19,7 +22,7 @@ tempomap(size_t addr)
 {
 	size_t *pgaddr;
 
-	pgaddr = (void *)(PGDIR + 0x2000);
+	pgaddr = (void *)PGTBL1;
 	pgaddr[((size_t)tempopage >> 12) % 1024] =
 		addr & ((~0xfff)|PG_PRESENT|PG_RW|PG_ALLOCATED);
 
@@ -27,9 +30,24 @@ tempomap(size_t addr)
 }
 
 void
+tempounmap()
+{
+	size_t *pgaddr;
+
+	pgaddr = (void *)PGTBL1;
+	pgaddr[((size_t)tempopage >> 12) % 1024] = 0;
+}
+
+size_t
+pgdirflags(void *virt)
+{
+	return *(size_t *)(PGDIR + ((size_t)virt >> 22));
+}
+
+void
 pgfault(size_t cr2, size_t error)
 {
-	iprintf("\nPage Fault:\n\n");
+//	iprintf("\nPage Fault:\n\n");
 	iprintf("\terror = 0x%x; cr2 = %p\n\n", error, cr2);
 	iprintf("Stopping Kernel\n\n", error, cr2);
 
@@ -186,7 +204,7 @@ pginfo()
 }
 
 void
-pgtablemap(size_t phys, size_t virt, size_t flags)
+pgdirmap(size_t phys, size_t virt, size_t flags)
 {
 	pgdir[virt >> 22] = phys | flags;
 }
@@ -205,38 +223,50 @@ pgmap(size_t phys, size_t virt, size_t flags)
 }
 
 void
-pginit(struct mm_area **mmap, int mmap_len)
+pginit(size_t kerend)
 {
 	size_t i;
+
 	pgdir = (void *)PGDIR;
+	tempopage = (size_t *)PGTEMPO;
+
+	pginfo();
+
+	pgdirunmap(0);
+	pgdirunmap(1 << 22);
+
+	for (i = KERNEL_BASE; i <= kerend; i += 0x1000)
+		pgmap(i - KERNEL_BASE, i, PG_PRESENT|PG_RW);
+
+	iprintf("\t at %p\n", i);
+
+	for (; i < PGDIR; i += 0x1000)
+		pgunmap(i);
+
+	for (; i <= PGTEMPO; i += 0x1000)
+		pgmap(i - KERNEL_BASE, i, PG_PRESENT|PG_RW);
+
+	for (; i < KERNEL_BASE + (2 << 22); i += 0x1000)
+		pgunmap(i);
+
+	tempounmap();
+
+	pginfo();
+}
+
+void
+kmeminit(struct mm_area **mmap, int mmap_len)
+{
+	size_t kerend;
 
 	kerend = (size_t)&end;
 	kerend += (kerend % 0x1000 ? 0x1000 : 0) - kerend % 0x1000;
-	tempopage = (size_t *)(PGDIR + 0x3000);
 
 	iprintf("\tkerend = %p\n", kerend);
 
-	pginfo();
+	pginit(kerend);
 
-	/*
-	for (i = 0; i < 1024; i++)
-		if (pgdir[i])
-			iprintf("\t%i %p\n", i, pgdir[i]);
-	*/
-
-//	pgtablemap(0, 0, 0);
-	pgdir[0] = 0;
-	pgtablemap(0, 1 << 22, 0);
-
-	for (i = KERNEL_BASE; i <= kerend; i += 0x1000)
-		pgmap(i - KERNEL_BASE, i, PG_PRESENT|PG_RW|PG_ALLOCATED);
-
-	for (; i < PGDIR; i += 0x1000)
-		pgmap(0, i, 0);
-
-	for (; i <= PGDIR + 0x3000; i += 0x1000)
-		pgmap(i - KERNEL_BASE, i, PG_PRESENT|PG_RW|PG_ALLOCATED);
-
-	pginfo();
+	pgreset();
+	iprintf("HERE\n");
 }
 
