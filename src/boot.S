@@ -26,7 +26,6 @@ multiboot:
 .global sti
 .global load_gdt
 .global load_idt
-.global pgreset
 .global multiboot
 .global int0_asm_handler
 .global int14_asm_handler
@@ -37,11 +36,6 @@ multiboot:
 
 .type	_start,	@function
 _start:
-	movl	$(end),	%eax
-	shl	$10,	%eax
-	shr	$22,	%eax
-	inc	%eax
-
 	/* Creating pgtable for first 4 Mb */
 	mov	$(PGTBL0-KERNEL_BASE),	%ecx
 	xor	%edi,			%edi
@@ -54,11 +48,10 @@ _start:
 
 	inc	%edi
 
-	cmp	%eax,	%edi
+	cmp	$1024,	%edi
 	jb	4b
 
 	/* Creating pgtable for second 4 Mb */
-	mov	$3,			%eax
 	mov	$(PGTBL1-KERNEL_BASE),	%ecx
 	xor	%edi,			%edi
 
@@ -69,7 +62,7 @@ _start:
 	mov	%edx,		(%ecx,	%edi,	4)
 
 	inc	%edi
-	cmp	%eax,	%edi
+	cmp	$1024,	%edi
 	jb	8b
 
 	/* Enabling paging */
@@ -157,14 +150,6 @@ load_gdt:
 	mov	%eax,	%fs
 	mov	%eax,	%gs
 
-	ret
-
-.type	pgreset		@function
-pgreset:
-	pushl	%eax
-	mov	%cr3, %eax
-	mov	%eax, %cr3
-	popl	%eax
 	ret
 
 /* load_idt -- loads Interrupt Descriptor Table to IDTR. */

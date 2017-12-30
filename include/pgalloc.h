@@ -1,5 +1,5 @@
-#ifndef  _PHYSPGALLOC_H_
-#define  _PHYSPGALLOC_H_
+#ifndef  _PGALLOC_H_
+#define  _PGALLOC_H_
 
 #include "defs.h"
 #include "mb_parce.h"
@@ -12,7 +12,7 @@
 #define PG_ALLOCATED		(1 << 9)
 
 
-void pgfault(size_t cr2, size_t error);
+void pgfault(size_t error, size_t addr);
 
 /* Virtual page allocator */
 void *pgalloc();
