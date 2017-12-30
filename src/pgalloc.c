@@ -128,20 +128,20 @@ pgalloc()
 	size_t i, pg;
 
 	for (i = 0x1000; i != 0; i += 0x1000) {
-		if (i != PGTEMPO && !(pgflags(i) & PG_PRESENT)) {
-			if (!(pgdirflags(i) & PG_PRESENT)) {
+		if (i != PGTEMPO && !(pgflags((void *)i) & PG_PRESENT)) {
+			if (!(pgdirflags((void *)i) & PG_PRESENT)) {
 				if (!(pg = physpgmalloc()))
 					return NULL;
 
-				pgdirmap(i, pg, PG_PRESENT|PG_RW);
+				pgdirmap(pg, (void *)i, PG_PRESENT|PG_RW);
 			}
 
 			if (!(pg = physpgmalloc()))
 				return NULL;
 
-			pgmap(i, pg, PG_PRESENT|PG_RW);
+			pgmap(pg, (void *)i, PG_PRESENT|PG_RW);
 
-			return i;
+			return (void *)i;
 		}
 	}
 
