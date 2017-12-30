@@ -4,7 +4,7 @@
 #include "defs.h"
 
 /* Maximum power of buddy */
-#define MAXBUDDY		30
+#define MAXBUDDY		20
 
 /* Flags for areas */
 #define	BUDDY_FREE		0
@@ -23,7 +23,7 @@ void *balloc(size_t size);
 //void *brealloc(void *ptr, size_t size);
 void bfree(void *ptr);
 void balloc_info();
-void balloc_init(int numpages);
+void balloc_init(void *pg);
 
 
 #endif /* _BUDDYALLOC_H_ */

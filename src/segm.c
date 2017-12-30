@@ -138,7 +138,7 @@ gdt_entry_set(unsigned index,
 			gdtep->access_byte |= GDT_ACCESS_RW;
 	}
 
-	iprintf("idx: %u access_byte=%02x flags=%02x privl=%02x\n", index,
+	dprintf("idx: %u access_byte=%02x flags=%02x privl=%02x\n", index,
 			gdtep->access_byte, gdtep->flags, privl);
 
 	return 0;

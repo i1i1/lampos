@@ -123,6 +123,7 @@ balloc(size_t size)
 	return NULL;
 
 balloc_found:
+
 	if (i == pow) {
 		np->flag = BUDDY_ALLOCATED;
 		return np + 1;
@@ -132,17 +133,21 @@ balloc_found:
 
 	if (np == buddies[i]) {
 		buddies[i] = np->next;
-		buddies[i]->prev = NULL;
+
+		if (np->next)
+			buddies[i]->prev = NULL;
 	}
 	else {
 		np->prev->next = np->next;
-		np->next->prev = np->prev;
+
+		if (np->next)
+			np->next->prev = np->prev;
 	}
+
+	addbuddy(np, i, BUDDY_ALLOCATED);
 
 	for (; i > pow; i--)
 		addbuddy((void *)((int8_t *)np + (1 << (i - 1))), i - 1, BUDDY_FREE);
-
-	addbuddy(np, i, BUDDY_ALLOCATED);
 
 	return np + 1;
 }
@@ -229,9 +234,9 @@ balloc_info()
 }
 
 void
-balloc_init(int numpages)
+balloc_init(void *pg)
 {
-	for (; numpages != 0; numpages--)
-		addbuddy((void *)pgalloc(), 12, BUDDY_FREE);
+	addbuddy(pg, 12, BUDDY_FREE);
+	balloc_info();
 }
 

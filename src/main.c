@@ -8,7 +8,7 @@
 #include "buddyalloc.h"
 
 #define VERSION_MAJOR	0
-#define VERSION_MINOR	1
+#define VERSION_MINOR	2
 
 
 extern char etext, edata, end;
@@ -31,21 +31,16 @@ main(size_t cr0, struct mb_info *mb)
 	segm_init();
 	int_init();
 
-	iprintf("\tmb = %p\n", mb);
-	iprintf("\tend = %p\n", &end);
+	dprintf("\tmb = %p\n", mb);
+	dprintf("\tend = %p\n", &end);
+	dprintf("\ttext ends at 0x%08x\n", &etext);
+	dprintf("\tdata ends at 0x%08x\n", &edata);
+	dprintf("\tbss and kernel ends at 0x%08x\n\n", &end);
 
 	mb_parse(mb, &mm, &mmlen);
 
 	kmeminit(mm, mmlen);
-	for (;;);
 
-	/* Allocating 8 * 1024 Pages(32 MB total) to allocator */
-	balloc_init(1);
-	//balloc_info();
-
-	iprintf("\ttext ends at 0x%08x\n", &etext);
-	iprintf("\tdata ends at 0x%08x\n", &edata);
-	iprintf("\tbss and kernel ends at 0x%08x\n", &end);
 
 /*
 	char c;
@@ -60,9 +55,9 @@ main(size_t cr0, struct mb_info *mb)
 	iprintf("\nCOM2 DATA END\n");
 */
 
-//	iprintf("LampOS v%u.%02u\n", VERSION_MAJOR, VERSION_MINOR);
-//	iprintf("x86-32 version, uniprocessor kernel\n");
-//	iprintf("\n\tHello, kernel world!\n\n");
+	iprintf("\n\nLampOS v%u.%02u\n", VERSION_MAJOR, VERSION_MINOR);
+	iprintf("x86-32 version, uniprocessor kernel\n");
+	iprintf("\n\tHello, kernel world!\n\n");
 
 	vga_move_hardware_cursor(81, 25);
 }

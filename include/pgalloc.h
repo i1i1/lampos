@@ -1,5 +1,5 @@
-#ifndef   _PHYSPGALLOC_H_
-#define   _PHYSPGALLOC_H_
+#ifndef  _PHYSPGALLOC_H_
+#define  _PHYSPGALLOC_H_
 
 #include "defs.h"
 #include "mb_parce.h"
@@ -12,17 +12,18 @@
 #define PG_ALLOCATED		(1 << 9)
 
 
-/* Helper for translating pages from virtual to physical */
 void pgfault(size_t cr2, size_t error);
-size_t virttophys(void *pg);
 
 /* Virtual page allocator */
 void *pgalloc();
 void pgfree(void *pg);
 void pginfo();
 
+size_t pgdirflags(void *virt);
+size_t pgflags(void *virt);
+
 /* Mapper of pages */
-void pgmap(size_t phys, size_t virt, size_t flags);
+void pgmap(size_t phys, void *virt, size_t flags);
 
 void kmeminit(struct mm_area **mmap, int mmap_len);
 

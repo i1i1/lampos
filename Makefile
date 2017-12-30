@@ -4,10 +4,13 @@ GENISOIMAGE = genisoimage
 CC = i586-elf-gcc
 CFLAGS = -Wall -I./include -nostdlib -ffreestanding -m32
 
-src = main.c vga.c libk.c ioport.c printf.c segm.c pgalloc.c sort.c \
-	mb_parce.c com.c buddyalloc.c interrupt.c
+src = main.c vga.c libk.c ioport.c printf.c segm.c pgalloc.c sort.c mb_parce.c 
+src += com.c buddyalloc.c interrupt.c physpgalloc.c
+
 sources = $(addprefix src/, $(src))
+
 headers = vga.h pgalloc.h sort.h mb_parce.h com.h buddyalloc.h interrupt.h
+headers += physpgalloc.h
 
 obj = $(src:.c=.o)
 objects = $(addprefix build/, $(obj))
@@ -15,11 +18,14 @@ objects = $(addprefix build/, $(obj))
 
 all: boot.iso
 
-test: all
+debug: CFLAGS += -DDEBUG
+debug: test
+
+test: clean all
 	@echo
 	@echo	"				TEST"
 	@echo
-	@qemu-system-i386 -kernel boot.bin -nographic -m 3600M 2>/dev/null &
+	@qemu-system-i386 -kernel boot.bin -nographic -m 128M 2>/dev/null &
 	@sleep 1
 	@killall qemu-system-i386 -q
 
@@ -49,5 +55,5 @@ clean:
 	-rm -rf boot.bin boot.iso
 	-rm -rf $(objects)
 
-.PHONY: clean premake
+.PHONY: clean debug test
 

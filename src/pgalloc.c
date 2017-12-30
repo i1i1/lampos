@@ -3,19 +3,25 @@
 #include "mb_parce.h"
 #include "interrupt.h"
 
+#include "buddyalloc.h"
 #include "pgalloc.h"
+#include "physpgalloc.h"
 
 
 #define	pgdirunmap(virt)	pgdirmap(0, virt, 0)
-#define	pgunmap(virt)		pgmap(0, virt, 0)
 
+extern char end;
 
 size_t *pgdir;
 const size_t *tempopage;
+uint8_t pgref[1024 * 1024] = { 0 };
 
 
-extern char end;
-extern void pgreset();
+inline void
+pgreset()
+{
+	__asm__ __volatile__ ("mov %cr3, %eax; mov %eax, %cr3");
+}
 
 void *
 tempomap(size_t addr)
@@ -23,7 +29,7 @@ tempomap(size_t addr)
 	size_t *pgaddr;
 
 	pgaddr = (void *)PGTBL1;
-	pgaddr[((size_t)tempopage >> 12) % 1024] =
+	pgaddr[((size_t)tempopage << 10) >> 22] =
 		addr & ((~0xfff)|PG_PRESENT|PG_RW|PG_ALLOCATED);
 	pgreset();
 
@@ -36,7 +42,7 @@ tempounmap()
 	size_t *pgaddr;
 
 	pgaddr = (void *)PGTBL1;
-	pgaddr[((size_t)tempopage >> 12) % 1024] = 0;
+	pgaddr[((size_t)tempopage << 10) >> 22] = 0;
 
 	pgreset();
 }
@@ -47,12 +53,71 @@ pgdirflags(void *virt)
 	return *(pgdir + ((size_t)virt >> 22));
 }
 
+size_t
+pgflags(void *virt)
+{
+	size_t *pgaddr;
+
+	if (!(pgdirflags(virt) & PG_PRESENT) || virt == (void *)PGTEMPO)
+		return 0;
+
+	pgaddr = tempomap(pgdir[(size_t)virt >> 22]);
+
+	return pgaddr[((size_t)virt << 10) >> 22];
+}
+
 void
-pgfault(size_t cr2, size_t error)
+pgdirmap(size_t phys, void *virt, size_t flags)
+{
+	pgdir[(size_t)virt >> 22] = phys | flags;
+}
+
+void
+pgmap_force(size_t phys, void *virt, size_t flags)
+{
+	size_t *pgaddr;
+
+	pgaddr = tempomap(pgdir[(size_t)virt >> 22]);
+	pgaddr[((size_t)virt << 10) >> 22] = phys | flags;
+
+	tempounmap();
+}
+
+void
+pgmap(size_t phys, void *virt, size_t flags)
+{
+	size_t pgaddr;
+
+	if (pgdirflags(virt) & PG_PRESENT)
+		goto pgmap_exit;
+
+	pgaddr = physpgmalloc();
+
+	if (!pgaddr)
+		return;
+
+	pgdirmap(pgaddr, virt, flags);
+
+pgmap_exit:
+	pgmap_force(phys, virt, flags);
+	pgref[phys >> 12]++;
+}
+
+void
+pgunmap(void *virt)
+{
+	if (--pgref[pgflags(virt) >> 12])
+		physpgfree(pgflags(virt));
+
+	pgmap_force(0, virt, 0);
+}
+
+void
+pgfault(size_t error, size_t addr)
 {
 	iprintf("\nPage Fault:\n\n");
-	iprintf("\terror = 0x%x; cr2 = %p\n\n", error, cr2);
-	iprintf("Stopping Kernel\n\n", error, cr2);
+	iprintf("\taddr = 0x%x; error = %p\n\n", addr, error);
+	iprintf("Stopping Kernel\n\n");
 
 	for (;;);
 }
@@ -60,50 +125,33 @@ pgfault(size_t cr2, size_t error)
 void *
 pgalloc()
 {
-	size_t i, j;
-	size_t *pgaddr;
+	size_t i, pg;
 
-	for (i = 0; i < 1024; i++) {
-		if (!(pgdir[i] & PG_PRESENT))
-			continue;
+	for (i = 0x1000; i != 0; i += 0x1000) {
+		if (i != PGTEMPO && !(pgflags(i) & PG_PRESENT)) {
+			if (!(pgdirflags(i) & PG_PRESENT)) {
+				if (!(pg = physpgmalloc()))
+					return NULL;
 
-		pgaddr = (size_t *)(pgdir[i] & (~0xfff));
-
-		for (j = 0; j < 1024; j++)
-			if (pgaddr[j] & PG_PRESENT &&
-					!(pgaddr[j] & PG_ALLOCATED)) {
-				pgaddr[j] |= PG_ALLOCATED;
-				return (void *)((i << 22) + (j << 12));
+				pgdirmap(i, pg, PG_PRESENT|PG_RW);
 			}
+
+			if (!(pg = physpgmalloc()))
+				return NULL;
+
+			pgmap(i, pg, PG_PRESENT|PG_RW);
+
+			return i;
+		}
 	}
 
-	return 0;
-}
-
-size_t
-virttophys(void *pg)
-{
-	size_t *pgaddr;
-
-	if (pgdir[(size_t)pg >> 22] & PG_PRESENT) {
-		pgaddr = (size_t *)(pgdir[(size_t)pg >> 22] & (~0xfff));
-
-		return pgaddr[((size_t)pg >> 12) % 1024] & (~0xfff);
-	}
-
-	return 0;
+	return NULL;
 }
 
 void
-pgfree(void *pg)
+pgfree(void *virt)
 {
-	size_t *pgaddr;
-
-	if (pgdir[(size_t)pg >> 22] & PG_PRESENT) {
-		pgaddr = (size_t *)(pgdir[(size_t)pg >> 22] & ~(0xfff));
-
-		pgaddr[((size_t)pg >> 12) % 1024] &= ~PG_ALLOCATED;
-	}
+	pgunmap(virt);
 }
 
 void
@@ -208,29 +256,9 @@ pginfo()
 	}
 }
 
-void
-pgdirmap(size_t phys, size_t virt, size_t flags)
-{
-	pgdir[virt >> 22] = phys | flags;
-}
 
-void
-pgmap(size_t phys, size_t virt, size_t flags)
-{
-	size_t *pgaddr;
-
-	if (!(pgdir[virt >> 22] & PG_PRESENT))
-		return;
-
-	iprintf("\tMapping %p to %p with %03x\n", phys, virt, flags);
-
-	pgaddr = tempomap(pgdir[virt >> 22]);
-
-	pgaddr[(virt >> 12) % 1024] = phys | flags;
-	tempounmap();
-}
-
-void
+/* Returnes one free page for buddy allocator */
+void *
 pginit(size_t kerend)
 {
 	size_t i;
@@ -238,20 +266,40 @@ pginit(size_t kerend)
 	pgdir = (void *)PGDIR;
 	tempopage = (size_t *)PGTEMPO;
 
+	for (i = KERNEL_BASE; i <= kerend; i += 0x1000)
+		pgmap(i - KERNEL_BASE, (void *)i, PG_PRESENT|PG_RW);
+
+	for (; i < PGDIR; i += 0x1000)
+		pgmap_force(0, (void *)i, 0);
+
+	for (; i < PGTEMPO; i += 0x1000)
+		pgmap(i - KERNEL_BASE, (void *)i, PG_PRESENT|PG_RW);
+
+	for (i += 0x1000; i < KERNEL_BASE + (2 << 22); i += 0x1000)
+		pgmap_force(0, (void *)i, 0);
+
 	pginfo();
+
+	return (void *)kerend;
 }
 
 void
 kmeminit(struct mm_area **mmap, int mmap_len)
 {
 	size_t kerend;
+	void *pg;
 
 	kerend = (size_t)&end;
-	kerend += (kerend % 0x1000 ? 0x1000 : 0) - kerend % 0x1000;
 
-	iprintf("\tkerend = %p\n", kerend);
+	if (kerend % 0x1000)
+		kerend += 0x1000 - kerend % 0x1000;
 
-	pginit(kerend);
-	pgreset();
+	dprintf("\tkerend = %p\n", kerend);
+
+	pg = pginit(kerend);
+
+	balloc_init(pg);
+
+	physpginit(mmap, mmap_len);
 }
 

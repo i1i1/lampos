@@ -66,9 +66,9 @@ area_parse(struct mb_mmap *mmap, size_t mmaplen,
 	sort(buf, *buflen, sizeof(void *), (void *)area_cmp);
 
 	for (i = 0; i < *buflen; i++)
-		iprintf("\tbeg = 0x%016llx\tend = 0x%016llx\n", buf[i]->beg, buf[i]->end);
+		dprintf("\tbeg = 0x%016llx\tend = 0x%016llx\n", buf[i]->beg, buf[i]->end);
 
-	iprintf("\n");
+	dprintf("\n");
 
 	for (prev = 0, i = 1; i < *buflen;) {
 		if (buf[i]->beg <= buf[prev]->end) {
@@ -86,8 +86,14 @@ area_parse(struct mb_mmap *mmap, size_t mmaplen,
 	}
 
 
-	for (i = 0; i < *buflen; i++)
-		iprintf("\tbeg = 0x%016llx\tend = 0x%016llx\n", buf[i]->beg, buf[i]->end);
+	for (i = 0; i < *buflen; i++) {
+		if (buf[i]->beg % 0x1000)
+			buf[i]->beg += 0x1000 - buf[i]->beg % 0x1000;
+
+		buf[i]->end -= buf[i]->end % 0x1000;
+
+		dprintf("\tbeg = 0x%016llx\tend = 0x%016llx\n", buf[i]->beg, buf[i]->end);
+	}
 }
 
 void
@@ -95,53 +101,51 @@ mb_parse(struct mb_info *mb, struct mm_area ***mm, int *mmlen)
 {
 	unsigned int i;
 
-	/*
-	iprintf("\n\t");
+	dprintf("\n\t");
 
 	for (i = 11; i != 0; i--)
-		iprintf("%d", GET_BIT(mb->flags, i));
+		dprintf("%d", GET_BIT(mb->flags, i));
 
-	iprintf("\n");
+	dprintf("\n");
 
 	if (mb->flags & MB_MEM_FLAG) {
-		iprintf("\tlower bound memory %dK\n", mb->mem_lower);
-		iprintf("\tupper bound memory %dK\n", mb->mem_upper);
+		dprintf("\tlower bound memory %dK\n", mb->mem_lower);
+		dprintf("\tupper bound memory %dK\n", mb->mem_upper);
 
 	}
 	if (mb->flags & MB_BD_FLAG) {
 		if (mb->boot_device[3] == 0x80)
-			iprintf("\tBios at hard drive\n");
+			dprintf("\tBios at hard drive\n");
 		else
-			iprintf("\tBios at floppy\n");
+			dprintf("\tBios at floppy\n");
 
 		for (i = 0; i < 3; i++)
 			if (mb->boot_device[2 - i] == 0xff)
-				iprintf("\tUnused partitioning %d\n", i);
+				dprintf("\tUnused partitioning %d\n", i);
 			else
-				iprintf("\tUsed partitioning %d\n", i);
+				dprintf("\tUsed partitioning %d\n", i);
 
 	}
 	if (mb->flags & MB_CMD_FLAG)
-		iprintf("\tcommand line: \"%s\"\n", mb->cmdline);
+		dprintf("\tcommand line: \"%s\"\n", mb->cmdline + KERNEL_BASE);
 	if (mb->flags & MB_MODS_FLAG) {
-		iprintf("\t%d modifications loaded\n", mb->mods_count);
-		iprintf("\tFirst modification address 0x%x\n", mb->mods_addr);
+		dprintf("\t%d modifications loaded\n", mb->mods_count);
+		dprintf("\tFirst modification address 0x%x\n", mb->mods_addr);
 
 	}
 	if (mb->flags & MB_SYM_1_FLAG) {
-		iprintf("\tsymbols 1 tabsize %d\n", mb->symbols.a.tabsize);
-		iprintf("\tsymbols 1 strsize %d\n", mb->symbols.a.strsize);
-		iprintf("\tsymbols 1 address 0x%x\n", mb->symbols.a.addr);
+		dprintf("\tsymbols 1 tabsize %d\n", mb->symbols.a.tabsize);
+		dprintf("\tsymbols 1 strsize %d\n", mb->symbols.a.strsize);
+		dprintf("\tsymbols 1 address 0x%x\n", mb->symbols.a.addr);
 
 	}
 	else if (mb->flags & MB_SYM_2_FLAG) {
-		iprintf("\tsymbols 2 num %d\n", mb->symbols.b.num);
-		iprintf("\tsymbols 2 size %d\n", mb->symbols.b.size);
-		iprintf("\tsymbols 2 addr %d\n", mb->symbols.b.addr);
-		iprintf("\tsymbols 2 shndx %d\n", mb->symbols.b.shndx);
+		dprintf("\tsymbols 2 num %d\n", mb->symbols.b.num);
+		dprintf("\tsymbols 2 size %d\n", mb->symbols.b.size);
+		dprintf("\tsymbols 2 addr %d\n", mb->symbols.b.addr);
+		dprintf("\tsymbols 2 shndx %d\n", mb->symbols.b.shndx);
 
 	}
-	*/
 	if (mb->flags & MB_MMAP_FLAG) {
 		unsigned int buflen = 16;
 		struct mm_area arr[buflen], *buf[buflen];
@@ -155,8 +159,6 @@ mb_parse(struct mb_info *mb, struct mm_area ***mm, int *mmlen)
 		*mmlen = buflen;
 
 	}
-//	if (mb->flags & MB_BOOT_FLAG)
-//		iprintf("\tbootloader name:\"%p\"\n", mb->bootloader + KERNEL_BASE);
 	/*
 	if (mb->flags & MB__FLAG) {
 	}*/

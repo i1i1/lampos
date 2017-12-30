@@ -51,6 +51,12 @@
 						b = c;				\
 					} while(0)
 
+	#ifdef	DEBUG
+		#define	dprintf(...)	iprintf(__VA_ARGS__)
+	#else
+		#define	dprintf(...)
+	#endif
+
 #endif
 
 
