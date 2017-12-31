@@ -25,6 +25,8 @@ void bfree(void *ptr);
 void balloc_info();
 void balloc_init(void *pg);
 
+void buddyaddmem(void *addr, int power);
+
 
 #endif /* _BUDDYALLOC_H_ */
 

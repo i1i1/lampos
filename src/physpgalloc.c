@@ -180,7 +180,5 @@ physpginit(struct mm_area **mmap, int mmap_len)
 	for (i = 0x0; i < physpgtotal; i += 0x1000)
 		if (in_pg(i) && in_mm_area(i, mmap, mmap_len))
 			physpgfree(i);
-
-	physpginfo();
 }
 

@@ -95,7 +95,9 @@ addbuddy_finalize:
 	/* IF not mergeable with other areas or allocated */
 	addr->next = np->next;
 	addr->prev = np;
-	np->next->prev = addr;
+
+	if (np->next)
+		np->next->prev = addr;
 	np->next = addr;
 	addr->flag = flag;
 }
@@ -144,10 +146,10 @@ balloc_found:
 			np->next->prev = np->prev;
 	}
 
-	addbuddy(np, i, BUDDY_ALLOCATED);
-
 	for (; i > pow; i--)
 		addbuddy((void *)((int8_t *)np + (1 << (i - 1))), i - 1, BUDDY_FREE);
+
+	addbuddy(np, i, BUDDY_ALLOCATED);
 
 	return np + 1;
 }
@@ -234,9 +236,14 @@ balloc_info()
 }
 
 void
+buddyaddmem(void *addr, int power)
+{
+	addbuddy(addr, power, BUDDY_FREE);
+}
+
+void
 balloc_init(void *pg)
 {
-	addbuddy(pg, 12, BUDDY_FREE);
-	balloc_info();
+	buddyaddmem(pg, 12);
 }
 

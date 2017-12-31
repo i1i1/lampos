@@ -15,7 +15,7 @@
 void pgfault(size_t error, size_t addr);
 
 /* Virtual page allocator */
-void *pgalloc();
+void *pgmalloc();
 void pgfree(void *pg);
 void pginfo();
 

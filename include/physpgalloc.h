@@ -8,6 +8,8 @@
 size_t physpgmalloc();
 void physpgfree(size_t phys);
 
+void physpginfo();
+
 void physpginit(struct mm_area **mmap, int mmap_len);
 
 #endif /* _PHYSPGALLOC_H_ */

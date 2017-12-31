@@ -16,7 +16,6 @@ size_t *pgdir;
 const size_t *tempopage;
 uint8_t pgref[1024 * 1024] = { 0 };
 
-
 inline void
 pgreset()
 {
@@ -123,26 +122,20 @@ pgfault(size_t error, size_t addr)
 }
 
 void *
-pgalloc()
+pgmalloc()
 {
 	size_t i, pg;
 
-	for (i = 0x1000; i != 0; i += 0x1000) {
-		if (i != PGTEMPO && !(pgflags((void *)i) & PG_PRESENT)) {
-			if (!(pgdirflags((void *)i) & PG_PRESENT)) {
-				if (!(pg = physpgmalloc()))
-					return NULL;
+	for (i = KERNEL_BASE; i; i += 0x1000) {
+		if (i == PGTEMPO || (pgflags((void *)i) & PG_PRESENT))
+			continue;
 
-				pgdirmap(pg, (void *)i, PG_PRESENT|PG_RW);
-			}
+		if (!(pg = physpgmalloc()))
+			return NULL;
 
-			if (!(pg = physpgmalloc()))
-				return NULL;
+		pgmap(pg, (void *)i, PG_PRESENT|PG_RW);
 
-			pgmap(pg, (void *)i, PG_PRESENT|PG_RW);
-
-			return (void *)i;
-		}
+		return (void *)i;
 	}
 
 	return NULL;
@@ -157,11 +150,11 @@ pgfree(void *virt)
 void
 pginfo()
 {
-	size_t free, used, unmapped, total;
+	size_t mapped, unmapped;
 	size_t start, flags, *pgaddr;
 	int i, j;
 
-	free = used = unmapped = 0;
+	mapped = unmapped = 0;
 	start = 0;
 
 	if (pgdir[0] & PG_PRESENT) {
@@ -195,10 +188,7 @@ pginfo()
 				start = ((i << 10) + j) << 12;
 			}
 			if (pgaddr[j] & PG_PRESENT)
-				if (pgaddr[j] & PG_ALLOCATED)
-					used += 0x1000;
-				else
-					free += 0x1000;
+				mapped += 0x1000;
 			else
 				unmapped += 0x1000;
 		}
@@ -208,7 +198,6 @@ pginfo()
 
 	iprintf("\t[0x%08x; 0x%08x] flags=%03x\n", start, 0xffffffff, flags);
 
-	total = used + free;
 	{
 	iprintf("\n\tunmap:\t");
 	if (unmapped >> 30)
@@ -219,40 +208,18 @@ pginfo()
 		iprintf("%d Kb\t", (unmapped >> 10) % 1024);
 	if (unmapped % 1024)
 		iprintf("%d b", unmapped % 1024);
-	iprintf("\n\n");
 
-	iprintf("\ttotal:\t");
-	if (total >> 30)
-		iprintf("%d Gb\t", total >> 30);
-	if ((total >> 20) % 1024)
-		iprintf("%d Mb\t", (total >> 20) % 1024);
-	if ((total >> 10) % 1024)
-		iprintf("%d Kb\t", (total >> 10) % 1024);
-	if (total % 1024)
-		iprintf("%d b", total % 1024);
-	iprintf("\n");
+	iprintf("\n\tmap:\t");
+	if (mapped >> 30)
+		iprintf("%d Gb\t", mapped >> 30);
+	if ((mapped >> 20) % 1024)
+		iprintf("%d Mb\t", (mapped >> 20) % 1024);
+	if ((mapped >> 10) % 1024)
+		iprintf("%d Kb\t", (mapped >> 10) % 1024);
+	if (mapped % 1024)
+		iprintf("%d b", mapped % 1024);
 
-	iprintf("\tfree:\t");
-	if (free >> 30)
-		iprintf("%d Gb\t", free >> 30);
-	if ((free >> 20) % 1024)
-		iprintf("%d Mb\t", (free >> 20) % 1024);
-	if ((free >> 10) % 1024)
-		iprintf("%d Kb\t", (free >> 10) % 1024);
-	if (free % 1024)
-		iprintf("%d b", free % 1024);
-	iprintf("\n");
-
-	iprintf("\tused:\t");
-	if (used >> 30)
-		iprintf("%d Gb\t", used >> 30);
-	if ((used >> 20) % 1024)
-		iprintf("%d Mb\t", (used >> 20) % 1024);
-	if ((used >> 10) % 1024)
-		iprintf("%d Kb\t", (used >> 10) % 1024);
-	if (used % 1024)
-		iprintf("%d b", used % 1024);
-	iprintf("\n");
+	iprintf("\n\ttotal:\t%d Gb\n", 4);
 	}
 }
 
@@ -278,15 +245,13 @@ pginit(size_t kerend)
 	for (i += 0x1000; i < KERNEL_BASE + (2 << 22); i += 0x1000)
 		pgmap_force(0, (void *)i, 0);
 
-	pginfo();
-
 	return (void *)kerend;
 }
 
 void
 kmeminit(struct mm_area **mmap, int mmap_len)
 {
-	size_t kerend;
+	size_t kerend, i;
 	void *pg;
 
 	kerend = (size_t)&end;
@@ -297,9 +262,22 @@ kmeminit(struct mm_area **mmap, int mmap_len)
 	dprintf("\tkerend = %p\n", kerend);
 
 	pg = pginit(kerend);
-
 	balloc_init(pg);
-
 	physpginit(mmap, mmap_len);
+
+	/* Allocating 1 Mb for buddyallocator */
+	for (i = 0; i < 1024 * 1024 - 1; i += 0x1000) {
+		pg = pgmalloc();
+
+		if (!pg)
+			goto kmeminit_end;
+
+		buddyaddmem(pg, 12);
+	}
+
+kmeminit_end:
+	iprintf("\nMemory setted up\n");
+
+	return;
 }
 
