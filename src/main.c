@@ -27,7 +27,7 @@ main(size_t cr0, struct mb_info *mb)
 
 	vga_init();
 	com_init(COM1_PORT_ADDRESS);
-	com_init(COM2_PORT_ADDRESS);
+//	com_init(COM2_PORT_ADDRESS);
 	segm_init();
 	int_init();
 
@@ -39,21 +39,7 @@ main(size_t cr0, struct mb_info *mb)
 
 	mb_parse(mb, &mm, &mmlen);
 
-	kmeminit(mm, mmlen);
-
-
-/*
-	char c;
-
-	iprintf("COM2 DATA BEGIN:\n");
-
-	do {
-		c = com_getc(COM2_PORT_ADDRESS);
-		iprintf("%c", c);
-	} while(c != '\0');
-
-	iprintf("\nCOM2 DATA END\n");
-*/
+	mem_init(mm, mmlen);
 
 	iprintf("\n\nLampOS v%u.%02u\n", VERSION_MAJOR, VERSION_MINOR);
 	iprintf("x86-32 version, uniprocessor kernel\n");

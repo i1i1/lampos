@@ -4,7 +4,7 @@ GENISOIMAGE = genisoimage
 CC = i586-elf-gcc
 CFLAGS = -Wall -I./include -nostdlib -ffreestanding -m32
 
-src = main.c vga.c libk.c ioport.c printf.c segm.c pgalloc.c sort.c mb_parce.c 
+src = main.c vga.c libk.c ioport.c printf.c segm.c pgalloc.c sort.c mb_parce.c
 src += com.c buddyalloc.c interrupt.c physpgalloc.c
 
 sources = $(addprefix src/, $(src))

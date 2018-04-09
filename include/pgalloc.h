@@ -25,7 +25,7 @@ size_t pgflags(void *virt);
 /* Mapper of pages */
 void pgmap(size_t phys, void *virt, size_t flags);
 
-void kmeminit(struct mm_area **mmap, int mmap_len);
+void mem_init(struct mm_area **mmap, int mmap_len);
 
 
 #endif /* _PHYSPGALLOC_H_ */

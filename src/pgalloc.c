@@ -249,7 +249,7 @@ pginit(size_t kerend)
 }
 
 void
-kmeminit(struct mm_area **mmap, int mmap_len)
+mem_init(struct mm_area **mmap, int mmap_len)
 {
 	size_t kerend, i;
 	void *pg;
@@ -265,8 +265,8 @@ kmeminit(struct mm_area **mmap, int mmap_len)
 	balloc_init(pg);
 	physpginit(mmap, mmap_len);
 
-	/* Allocating 1 Mb for buddyallocator */
-	for (i = 0; i < 1024 * 1024 - 1; i += 0x1000) {
+	/* Allocating 128 Kb for buddyallocator */
+	for (i = 0; i < 128 * 1024; i += 0x1000) {
 		pg = pgmalloc();
 
 		if (!pg)
