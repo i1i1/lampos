@@ -72,13 +72,16 @@ upcase(char c)
 char
 buf_getc()
 {
+	char c;
+
 	/* If number of chars in buf == 0 */
 	if (end == beg)
 		return '\0';
 
-	end = end ? end - 1 : NELEMS(key_buf) - 1;
+	c = key_buf[beg];
+	beg = (beg + 1) % NELEMS(key_buf);
 
-	return key_buf[end];
+	return c;
 }
 
 void

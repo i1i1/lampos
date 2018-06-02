@@ -105,7 +105,7 @@ pgmap_exit:
 void
 pgunmap(void *virt)
 {
-	if (--pgref[pgflags(virt) >> 12])
+	if (--pgref[pgflags(virt) >> 12] == 0)
 		physpgfree(pgflags(virt));
 
 	pgmap_force(0, virt, 0);
@@ -224,7 +224,10 @@ pginfo()
 }
 
 
-/* Returnes one free page for buddy allocator */
+/* Hack:
+ *
+ * Returnes one free page(4 Kb) for buddy allocator
+ */
 void *
 pginit(size_t kerend)
 {

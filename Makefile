@@ -18,8 +18,13 @@ debug: make boot.iso test
 default: CFLAGS += -Werror
 default: make boot.iso
 
+gdb: CFLAGS += -ggdb -DDEBUG
+gdb: boot.iso
+	qemu-system-i386 -cdrom boot.iso -m 128M -s -S &
+	gdb
+
 test: boot.iso
-	@qemu-system-i386 -kernel boot.bin -m 128M
+	qemu-system-i386 -cdrom boot.iso -m 128M
 
 boot.bin: src/boot.S $(obj)
 	$(CC) $(CFLAGS) -T $(KERNEL_LD) -o $@ $^ -lgcc
