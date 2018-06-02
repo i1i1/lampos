@@ -9,13 +9,8 @@ enum pic_icw {
 	ICW_IC4		= 0x01,
 };
 
-enum {
-	IRQ_TIMER_MASK	= 1,
-	IRQ_KBD_MASK	= 2,
-};
 
-// choose which interrupts we want to recieve
-#define IRQ_ALL 0x3	//IRQ_TIMER | IRQ_KBD
+static uint16_t pic_imr;
 
 static inline void pic_set_imr(enum pic_port p, uint8_t mask);
 
@@ -26,8 +21,21 @@ static inline void io_wait(void)
 }
 
 void
-pic_init(void)
+pic_imr_add(enum pic_imr_off off)
 {
+	pic_imr |= (1 << off);
+
+	if (off < 8)
+		pic_set_imr(PIC_MASTER_DT, (uint8_t)pic_imr);
+	else
+		pic_set_imr(PIC_MASTER_DT, (uint8_t)(pic_imr >> 8));
+}
+
+void
+pic_init()
+{
+	pic_imr = 0;
+
 	// ICW 1. Initialisation.
 	outb(PIC_MASTER_CMD, ICW_INIT | ICW_IC4);
 	outb(PIC_SLAVE_CMD, ICW_INIT | ICW_IC4);
@@ -48,7 +56,7 @@ pic_init(void)
 	outb(PIC_MASTER_DT, 0x1);	// Enable PIC for 80x86 mode
 	io_wait();
 
-	pic_set_imr(PIC_MASTER_DT, IRQ_ALL);
+	pic_set_imr(PIC_MASTER_DT, pic_imr);
 }
 
 // Sets mask register (IMR)

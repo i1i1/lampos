@@ -18,8 +18,6 @@ static volatile char key_buf[KEYBUFSZ];
 static volatile int beg = 0;
 static volatile int end = 0;
 
-static int irq = 0;
-
 static kbd_type kbd_cur_set;
 
 static int shift = 0;
@@ -168,14 +166,6 @@ ungetchar(char c)
 	buf_putc(c);
 }
 
-/* Hack! */
-void
-ps_2_irq()
-{
-	buf_putc((char)inb(PS_2_DATA));
-	pic_eoi(PIC_MASTER_CMD);
-}
-
 void
 ps_2_output_wait()
 {
@@ -200,12 +190,6 @@ ps_2_outb(uint8_t cmd)
 uint8_t
 ps_2_inb()
 {
-	/* Hack! */
-	if (irq) {
-		while (beg == end);
-		return (uint8_t)key_buf[beg++];
-	}
-
 	ps_2_output_wait();
 	return inb(PS_2_DATA);
 }
@@ -249,8 +233,6 @@ ps_2_init()
 {
 	uint8_t conf, dev_type;
 
-	int_add(IRQ_KBD, 1, TRAP_GATE, 0, ps_2_asm_handler);
-
 	/* Disabling PS/2 ports */
 	ps_2_outb(0xAD);
 	ps_2_outb(0xA7);
@@ -274,7 +256,6 @@ ps_2_init()
 	assert_or_panic(ps_2_inb() == 0x00, "First PS/2 port test failed");
 
 	/* Enabling translation and IRQ */
-	irq = 1;
 	ps_2_outb(0x60);
 	outb(PS_2_DATA, 0x71);
 
@@ -340,6 +321,9 @@ ps_2_init()
 	/* Enable scanning */
 	assert_or_panic(ps_2_dev1_outb(0xF4) == 0, "outb to dev1 failed");
 	ps_2_ack();
+
+	int_add(IRQ_PS_2, 1, TRAP_GATE, 0, kbd_asm_handler);
+	pic_imr_add(IRQ_PS_2_MASK);
 }
 
 void
@@ -355,7 +339,5 @@ kbd_init()
 	ps_2_dev1_outb(0xF0);
 	ps_2_dev1_outb(kbd_cur_set);
 	ps_2_ack();
-
-	int_add(IRQ_KBD, 1, TRAP_GATE, 0, kbd_asm_handler);
 }
 

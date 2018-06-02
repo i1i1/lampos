@@ -71,7 +71,9 @@ pit_init()
 	g_timer.ms = 0;
 
 	pit_set_freq(1000); // raise IRQ approximately every 1 ms
+
 	int_add(IRQ_TIMER, 1, TRAP_GATE, 0, pit_asm_handler);
+	pic_imr_add(IRQ_TIMER_MASK);
 }
 
 static inline void

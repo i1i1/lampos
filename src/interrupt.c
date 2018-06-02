@@ -34,11 +34,26 @@ zerodivision(size_t cr2)
 	for (;;);
 }
 
+extern void *def_asm_handler;
+
+void
+def_irq()
+{
+	panic("Smth went wrong...");
+}
+
 void
 int_init()
 {
+	int i;
+
 	idt.limit = 256 * 8 - 1;
 	idt.intr = intr;
+
+	memset(intr, 0, sizeof(intr));
+
+	for (i = 0; i < 256; i++)
+		int_add(i, 1, INT_GATE, 0, def_asm_handler);
 
 	int_add( 0, 1, INT_GATE	, 0, int0_asm_handler);
 	int_add(14, 1, TRAP_GATE, 0, int14_asm_handler);

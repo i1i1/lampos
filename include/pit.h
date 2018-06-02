@@ -1,16 +1,16 @@
-#ifndef _TIP_H_
-#define _TIP_H_
+#ifndef _PIT_H_
+#define _PIT_H_
 
 #include "defs.h"
 
 /* DO NOT CALL! */
-void tip_irq();
+void pit_irq();
 
-void tip_init();
+void pit_init();
 
-void tip_sleep(int ms);
+void pit_sleep(int ms);
 
-size_t tip_get_ticks();
+size_t pit_get_ticks();
 
-#endif /* _TIP_H_ */
+#endif /* _PIT_H_ */
 

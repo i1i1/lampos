@@ -180,20 +180,6 @@ int14_asm_handler:
 
 	iret
 
-.global ps_2_asm_handler
-.type	ps_2_asm_handler	@function
-ps_2_asm_handler:
-	pushl   %fs
-	pushl   %es
-	pushl   %ds
-	pushal
-	call	ps_2_irq
-	popal
-	popl	%ds
-	popl	%es
-	popl	%fs
-	iret
-
 .global kbd_asm_handler
 .type	kbd_asm_handler	@function
 kbd_asm_handler:
@@ -222,4 +208,17 @@ pit_asm_handler:
 	popl	%fs
 	iret
 
+.global def_asm_handler
+.type	def_asm_handler	@function
+def_asm_handler:
+	pushl   %fs
+	pushl   %es
+	pushl   %ds
+	pushal
+	call	def_irq
+	popal
+	popl	%ds
+	popl	%es
+	popl	%fs
+	iret
 

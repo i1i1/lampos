@@ -37,7 +37,6 @@ main(size_t cr0, struct mb_info *mb)
 	segm_init();
 
 	pic_init();
-	pit_init();
 	int_init();
 
 	dprintf("\tmb = %p\n", mb);
@@ -48,6 +47,8 @@ main(size_t cr0, struct mb_info *mb)
 
 	mb_parse(mb, &mm, &mmlen);
 	mem_init(mm, mmlen);
+
+	pit_init();
 	ps_2_init();
 
 	iprintf("\n\nLampOS v%u.%02u\n", VERSION_MAJOR, VERSION_MINOR);
