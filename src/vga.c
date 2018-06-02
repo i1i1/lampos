@@ -225,6 +225,8 @@ vga_putc(int c)
 		vga_scroll_up();
 		y_coord--;
 	}
+
+	vga_move_hardware_cursor(x_coord, y_coord);
 }
 
 void

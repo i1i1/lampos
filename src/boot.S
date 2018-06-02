@@ -1,4 +1,4 @@
-#include <defs.h>
+#include "defs.h"
 
 #define PAGE_ALGIN	1<<0
 #define MEMORY_INFO	1<<1
@@ -179,4 +179,47 @@ int14_asm_handler:
 	addl	$8,	%esp
 
 	iret
+
+.global ps_2_asm_handler
+.type	ps_2_asm_handler	@function
+ps_2_asm_handler:
+	pushl   %fs
+	pushl   %es
+	pushl   %ds
+	pushal
+	call	ps_2_irq
+	popal
+	popl	%ds
+	popl	%es
+	popl	%fs
+	iret
+
+.global kbd_asm_handler
+.type	kbd_asm_handler	@function
+kbd_asm_handler:
+	pushl   %fs
+	pushl   %es
+	pushl   %ds
+	pushal
+	call	kbd_irq
+	popal
+	popl	%ds
+	popl	%es
+	popl	%fs
+	iret
+
+.global pit_asm_handler
+.type	pit_asm_handler	@function
+pit_asm_handler:
+	pushl   %fs
+	pushl   %es
+	pushl   %ds
+	pushal
+	call	pit_irq
+	popal
+	popl	%ds
+	popl	%es
+	popl	%fs
+	iret
+
 

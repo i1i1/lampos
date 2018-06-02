@@ -1,4 +1,4 @@
-#include <kernel.h>
+#include "kernel.h"
 
 
 #define PRIVL_KERNEL	0x0

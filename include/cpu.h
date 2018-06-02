@@ -1,7 +1,7 @@
 #ifndef _CPU_H_
 #define _CPU_H_
 
-#include <defs.h>
+#include "defs.h"
 
 #define GDT_PRIVL0	0x0
 #define GDT_PRIVL1	0x1

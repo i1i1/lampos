@@ -254,6 +254,8 @@ mem_init(struct mm_area **mmap, int mmap_len)
 	size_t kerend, i;
 	void *pg;
 
+	assert_or_panic(mmap, "Invalid pointer to memory map structure");
+
 	kerend = (size_t)&end;
 
 	if (kerend % 0x1000)
@@ -270,14 +272,13 @@ mem_init(struct mm_area **mmap, int mmap_len)
 		pg = pgmalloc();
 
 		if (!pg)
-			goto kmeminit_end;
+			goto end;
 
 		buddyaddmem(pg, 12);
 	}
 
-kmeminit_end:
+end:
 	iprintf("\nMemory setted up\n");
-
 	return;
 }
 

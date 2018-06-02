@@ -1,42 +1,27 @@
 KERNEL_LD = src/link-kernel.ld
 STAGE2 = build/stage2_eltorito
 GENISOIMAGE = genisoimage
-CC = i586-elf-gcc
-CFLAGS = -Wall -I./include -nostdlib -ffreestanding -m32
+CC = gcc
+CFLAGS = -Wall -Iinclude -nostdlib -ffreestanding -m32 -std=gnu90
 
-src = main.c vga.c libk.c ioport.c printf.c segm.c pgalloc.c sort.c mb_parce.c
-src += com.c buddyalloc.c interrupt.c physpgalloc.c
+src = $(wildcard src/*.c)
+hdr = $(wildcard include/*.h)
 
-sources = $(addprefix src/, $(src))
+obj = $(subst src, build, $(src:.c=.o))
+dep = $(subst src, build, $(src:.c=.d))
 
-headers = vga.h pgalloc.h sort.h mb_parce.h com.h buddyalloc.h interrupt.h
-headers += physpgalloc.h
-
-obj = $(src:.c=.o)
-objects = $(addprefix build/, $(obj))
-
-
-all: boot.iso
+all: default
 
 debug: CFLAGS += -DDEBUG
-debug: test
+debug: make boot.iso test
 
-test: clean all
-	@echo
-	@echo	"				TEST"
-	@echo
-	@qemu-system-i386 -kernel boot.bin -nographic -m 128M 2>/dev/null &
-	@sleep 1
-	@killall qemu-system-i386 -q
+default: CFLAGS += -Werror
+default: make boot.iso
 
-build/%.o: kernel.h defs.h
+test: boot.iso
+	@qemu-system-i386 -kernel boot.bin -m 128M
 
-vga.o: include/vga.h
-
-build/%.o: src/%.c
-	$(CC) $(CFLAGS) -c -T $(KERNEL_LD) -nostdlib -ffreestanding -o $@ $<
-
-boot.bin: src/boot.S $(objects)
+boot.bin: src/boot.S $(obj)
 	$(CC) $(CFLAGS) -T $(KERNEL_LD) -o $@ $^ -lgcc
 
 boot.iso: boot.bin
@@ -50,10 +35,27 @@ boot.iso: boot.bin
 	$(GENISOIMAGE) -R -b boot/grub/stage2_eltorito -no-emul-boot\
 		-boot-load-size 4 -boot-info-table -quiet -o boot.iso iso/
 
-clean:
-	-rm -rf iso/
-	-rm -rf boot.bin boot.iso
-	-rm -rf $(objects)
+build/%.o: src/%.c build/%.d
+	$(CC) $(CFLAGS) -c -T $(KERNEL_LD) -nostdlib -ffreestanding -o $@ $<
 
-.PHONY: clean debug test
+make: $(dep)
+
+build/%.d: src/%.c
+	./makedeps.awk -v inc=include -v build=build $< > $@
+#	$(CC) $(CFLAGS) -MM $< | sed -e "s/^[^ \t]\+\.o:/build\/&/" > $@
+
+clean:
+	rm -rf iso/
+	rm -rf boot.bin boot.iso
+	rm -rf $(obj)
+
+cleandeps:
+	rm -rf $(dep)
+
+.PHONY: clean debug test make
+.SECONDARY: $(dep)
+
+ifneq "$(MAKECMDGOALS)" "clean"
+-include $(dep)
+endif
 

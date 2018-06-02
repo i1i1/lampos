@@ -11,7 +11,7 @@ struct physarea_lst {
 	size_t beg;
 	size_t end;
 
-} *head;
+} *head = NULL;
 
 size_t physpgtotal = 0;
 

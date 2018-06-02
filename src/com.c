@@ -4,6 +4,15 @@
 
 
 inline int
+com_port_valid(uint16_t port)
+{
+	return (port == COM1_PORT_ADDRESS) ||
+			(port == COM2_PORT_ADDRESS) ||
+			(port == COM3_PORT_ADDRESS) ||
+			(port == COM4_PORT_ADDRESS);
+}
+
+inline int
 com_trans_empty(uint16_t port)
 {
 	return !(inb(port + 5) & 0x20);
@@ -12,6 +21,9 @@ com_trans_empty(uint16_t port)
 inline void
 com_putc(uint16_t port, int c)
 {
+	if (!com_port_valid(port))
+		return;
+
 	while (com_trans_empty(port))
 		;
 
@@ -21,6 +33,9 @@ com_putc(uint16_t port, int c)
 void
 com_puts(uint16_t port, char *s)
 {
+	if (!com_port_valid(port))
+		return;
+
 	while (*s != '\0')
 		com_putc(port, *s++);
 }
@@ -34,6 +49,9 @@ com_fifo_empty(uint16_t port)
 int
 com_getc(uint16_t port)
 {
+	if (!com_port_valid(port))
+		return 0;
+
 	while (com_fifo_empty(port))
 		;
 
@@ -43,6 +61,9 @@ com_getc(uint16_t port)
 void
 com_init(uint16_t port)
 {
+	if (!com_port_valid(port))
+		return;
+
 	// Disable DLAB
 	outb(port + 3, 0x00);
 	// Disable all interrupts

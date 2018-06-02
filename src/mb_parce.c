@@ -101,6 +101,9 @@ mb_parse(struct mb_info *mb, struct mm_area ***mm, int *mmlen)
 {
 	unsigned int i;
 
+	assert_or_panic(mb, "Invalid pointer to multiboot structure");
+	assert_or_panic(mm, "Invalid pointer to memory map structure");
+
 	dprintf("\n\t");
 
 	for (i = 11; i != 0; i--)
