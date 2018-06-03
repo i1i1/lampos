@@ -97,6 +97,8 @@ higher_half:
 
 	mov	$stack_top,	%esp
 
+	cli
+
 	/*
 	 * Call kernel C entry point function.
 	 */

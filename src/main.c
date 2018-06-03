@@ -29,15 +29,9 @@ main(size_t cr0, struct mb_info *mb)
 
 	assert_or_panic(mb, "Multiboot structure points to NULL");
 
-	cli();
-
-	vga_init();
 	com_init(COM1_PORT_ADDRESS);
 //	com_init(COM2_PORT_ADDRESS);
-	segm_init();
-
-	pic_init();
-	int_init();
+	vga_init();
 
 	dprintf("\tmb = %p\n", mb);
 	dprintf("\tend = %p\n", &end);
@@ -45,6 +39,11 @@ main(size_t cr0, struct mb_info *mb)
 	dprintf("\tdata ends at 0x%08x\n", &edata);
 	dprintf("\tbss and kernel ends at 0x%08x\n\n", &end);
 
+	pic_init();
+	int_init();
+
+	/* Memory init */
+	segm_init();
 	mb_parse(mb, &mm, &mmlen);
 	mem_init(mm, mmlen);
 
