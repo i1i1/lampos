@@ -8,14 +8,14 @@
 
 struct physarea_lst {
 	struct physarea_lst *next;
-	size_t beg;
-	size_t end;
+	paddr_t beg;
+	paddr_t end;
 
 } *head = NULL;
 
 size_t physpgtotal = 0;
 
-size_t
+paddr_t
 physpgmalloc()
 {
 	size_t pg;
@@ -38,7 +38,7 @@ physpgmalloc()
 }
 
 void
-physpgfree(size_t phys)
+physpgfree(paddr_t phys)
 {
 	struct physarea_lst *np, *tmp;
 
@@ -145,8 +145,11 @@ int
 in_pg(size_t phys)
 {
 	size_t pg;
+	vaddr_t tmp;
 
-	pg = pgflags((void *)(phys + KERNEL_BASE));
+	tmp.num = phys + KERNEL_BASE;
+
+	pg = pgflags(tmp).num;
 
 	if (pg & PG_PRESENT) {
 		pg &= ~0xfff;

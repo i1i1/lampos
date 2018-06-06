@@ -21,6 +21,17 @@ inw(uint16_t port)
 
 	return c;
 }
+/* This helper writes a (4-byte) long word to I/O port. */
+inline uint32_t
+inl(uint16_t port)
+{
+	uint16_t c;
+
+	__asm__ __volatile__ ("inl %%dx,%%eax" : "=a"(c) : "d"(port));
+
+	return c;
+}
+
 
 /* This helper writes a byte to I/O port. */
 inline void
@@ -34,5 +45,12 @@ inline void
 outw(uint16_t port, uint16_t val)
 {
 	__asm__ __volatile__ ("outw %%ax,%%dx" :: "d"(port), "a"(val));
+}
+
+/* This helper writes a (4-byte) long word to I/O port. */
+inline void
+outl(uint16_t port, uint32_t val)
+{
+	__asm__ __volatile__ ("outl %%eax,%%dx" :: "d"(port), "a"(val));
 }
 

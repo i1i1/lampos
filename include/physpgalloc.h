@@ -4,9 +4,11 @@
 #include "defs.h"
 #include "mb_parce.h"
 
+typedef size_t paddr_t;
 
-size_t physpgmalloc();
-void physpgfree(size_t phys);
+
+paddr_t physpgmalloc();
+void physpgfree(paddr_t phys);
 
 void physpginfo();
 

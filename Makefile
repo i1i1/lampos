@@ -20,8 +20,8 @@ default: make boot.iso
 
 gdb: CFLAGS += -ggdb -DDEBUG
 gdb: boot.iso
-	qemu-system-i386 -cdrom boot.iso -m 128M -s -S &
-	gdb
+	qemu-system-i386 -cdrom boot.iso -m 128M -gdb tcp::1234 -S &
+	gdb -s boot.bin
 
 test: boot.iso
 	qemu-system-i386 -cdrom boot.iso -m 128M
