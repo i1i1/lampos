@@ -14,12 +14,18 @@
 #define PG_ALLOCATED		(1 << 9)
 
 
-typedef union {
-	struct {
-		uint16_t off : 12;
+/* Various representations of virtual address */
+typedef union vaddr {
+	/* For indexing with Paging structures */
+	struct paging {
+		uint16_t fl : 12;
 		uint16_t ent : 10;
 		uint16_t dir : 10;
 	} __attribute__ ((packed)) tbl;
+
+	/* For refering to it as Paging structure */
+	union vaddr *dir;
+
 	size_t num;
 	void *ptr;
 } __attribute__ ((packed)) vaddr_t;
@@ -38,7 +44,7 @@ vaddr_t pgdirinfo(vaddr_t v);
 void pginfo();
 
 /* Mapper of pages */
-void pgmap(paddr_t p, vaddr_t v, uint16_t flags);
+void pgmap(paddr_t p, vaddr_t v, uint16_t fl);
 
 void mem_init(struct mm_area **mmap, int mmap_len);
 

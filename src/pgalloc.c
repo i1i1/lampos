@@ -25,12 +25,13 @@ pgreset()
 vaddr_t
 tempomap(vaddr_t addr)
 {
-	vaddr_t *pgaddr;
+	vaddr_t pg;
 
-	pgaddr = (void *)PGTBL1;
+	pg.num = PGTBL1;
 
-	pgaddr[tempopage.tbl.ent] = addr;
-	pgaddr[tempopage.tbl.ent].tbl.off = PG_PRESENT|PG_RW|PG_ALLOCATED;
+	pg.dir[tempopage.tbl.ent] = addr;
+	pg.dir[tempopage.tbl.ent].tbl.fl =
+		PG_PRESENT|PG_RW|PG_ALLOCATED;
 
 	pgreset();
 
@@ -40,10 +41,10 @@ tempomap(vaddr_t addr)
 void
 tempounmap()
 {
-	size_t *pgaddr;
+	vaddr_t pgaddr;
 
-	pgaddr = (void *)PGTBL1;
-	pgaddr[tempopage.tbl.ent] = 0;
+	pgaddr.num = PGTBL1;
+	pgaddr.dir[tempopage.tbl.ent].num = 0;
 
 	pgreset();
 }
@@ -61,32 +62,34 @@ pgdirflags(vaddr_t v)
 vaddr_t
 pgflags(vaddr_t v)
 {
-	vaddr_t *pgaddr, ret;
+	vaddr_t ret;
 
-	if (!(pgdirflags(v).tbl.off & PG_PRESENT) ||
+	if (!(pgdirflags(v).tbl.fl & PG_PRESENT) ||
 	    v.ptr == tempopage.ptr) {
 		ret.num = 0;
 		return ret;
 	}
 
-	pgaddr = tempomap(pgdir[v.tbl.dir]).ptr;
+	ret = tempomap(pgdir[v.tbl.dir]);
 
-	return pgaddr[v.tbl.ent];
+	return ret.dir[v.tbl.ent];
 }
 
 void
-pgdirmap(paddr_t p, vaddr_t v, uint16_t flags)
+pgdirmap(paddr_t p, vaddr_t v, uint16_t fl)
 {
-	pgdir[v.tbl.dir].num = p | flags;
+	pgdir[v.tbl.dir].num = p;
+	pgdir[v.tbl.dir].tbl.fl = fl;
 }
 
 void
 pgmap_force(paddr_t p, vaddr_t v, size_t flags)
 {
-	size_t *pgaddr;
+	vaddr_t pg;
 
-	pgaddr = tempomap(pgdir[v.tbl.dir]).ptr;
-	pgaddr[v.tbl.ent] = p | flags;
+	pg = tempomap(pgdir[v.tbl.dir]);
+	pg.dir[v.tbl.ent].num = p;
+	pg.dir[v.tbl.ent].tbl.fl = flags;
 
 	tempounmap();
 }
@@ -94,17 +97,17 @@ pgmap_force(paddr_t p, vaddr_t v, size_t flags)
 void
 pgmap(paddr_t p, vaddr_t v, uint16_t flags)
 {
-	size_t pgaddr;
+	paddr_t pg;
 
-	if (pgdirflags(v).tbl.off & PG_PRESENT)
+	if (pgdirflags(v).tbl.fl & PG_PRESENT)
 		goto pgmap_exit;
 
-	pgaddr = physpgmalloc();
+	pg = physpgmalloc();
 
-	if (!pgaddr)
+	if (!pg)
 		return;
 
-	pgdirmap(pgaddr, v, flags);
+	pgdirmap(pg, v, flags);
 
 pgmap_exit:
 	pgmap_force(p, v, flags);
@@ -138,7 +141,7 @@ pgmalloc()
 
 	for (i.num = KERNEL_BASE; i.ptr; i.num += 0x1000) {
 		if (i.num == PGTEMPO ||
-		    (pgflags(i).tbl.off & PG_PRESENT))
+		    (pgflags(i).tbl.fl & PG_PRESENT))
 			continue;
 
 		if (!(p = physpgmalloc())) {
@@ -174,7 +177,7 @@ pginfo()
 
 	if (pgdir[0].num & PG_PRESENT) {
 		pgaddr = tempomap(pgdir[0]).ptr;
-		flags = pgaddr[0].tbl.off & 0xf9f;
+		flags = pgaddr[0].tbl.fl & 0xf9f;
 	}
 	else
 		flags = 0;
@@ -182,7 +185,7 @@ pginfo()
 	iprintf("\n\nPAGE ALLOCATOR INFO:\n");
 
 	for (i = 0; i < 1024; i++) {
-		if (!(pgdir[i].tbl.off & PG_PRESENT)) {
+		if (!(pgdir[i].tbl.fl & PG_PRESENT)) {
 			unmapped += 0x400000;
 			if (flags) {
 				iprintf("\t[0x%08x; 0x%08x) flags=%03x\n",
@@ -196,13 +199,13 @@ pginfo()
 		pgaddr = tempomap(pgdir[i]).ptr;
 
 		for (j = 0; j < 1024; j++) {
-			if (flags != (pgaddr[j].tbl.off & 0xf9f)) {
+			if (flags != (pgaddr[j].tbl.fl & 0xf9f)) {
 				iprintf("\t[0x%08x; 0x%08x) flags=%03x\n",
 						start, ((i << 10) + j) << 12, flags);
-				flags = pgaddr[j].tbl.off & 0xf9f;
+				flags = pgaddr[j].tbl.fl & 0xf9f;
 				start = ((i << 10) + j) << 12;
 			}
-			if (pgaddr[j].tbl.off & PG_PRESENT)
+			if (pgaddr[j].tbl.fl & PG_PRESENT)
 				mapped += 0x1000;
 			else
 				unmapped += 0x1000;
@@ -271,16 +274,18 @@ mem_init(struct mm_area **mmap, int mmap_len)
 	assert_or_panic(mmap, "Invalid pointer to memory map structure");
 
 	kerend.ptr = &end;
-	if (kerend.tbl.off) {
-		kerend.tbl.off = 0;
+
+	/* If offset from page boundary != 0  */
+	if (kerend.tbl.fl) {
+		kerend.tbl.fl = 0;
 		kerend.tbl.ent++;
 
 		if (kerend.tbl.ent == 0)
 			kerend.tbl.dir++;
 	}
 
-	dprintf("dir = 0x%x; ent = 0x%x; off = 0x%x;\n", kerend.tbl.dir,
-		kerend.tbl.ent, kerend.tbl.off);
+	dprintf("dir = 0x%x; ent = 0x%x; fl = 0x%x;\n", kerend.tbl.dir,
+		kerend.tbl.ent, kerend.tbl.fl);
 	dprintf("num = 0x%x\n", kerend.num);
 
 	pg = pginit(kerend);
