@@ -9,6 +9,7 @@
 #include "buddyalloc.h"
 #include "keyboard.h"
 #include "pit.h"
+#include "pci.h"
 #include "shell.h"
 
 #define VERSION_MAJOR	0
@@ -49,6 +50,8 @@ main(size_t cr0, struct mb_info *mb)
 
 	pit_init();
 	ps_2_init();
+
+	pci_init();
 
 	iprintf("\n\nLampOS v%u.%02u\n", VERSION_MAJOR, VERSION_MINOR);
 	iprintf("x86-32 version, uniprocessor kernel\n");
