@@ -25,7 +25,7 @@ inw(uint16_t port)
 inline uint32_t
 inl(uint16_t port)
 {
-	uint16_t c;
+	uint32_t c;
 
 	__asm__ __volatile__ ("inl %%dx,%%eax" : "=a"(c) : "d"(port));
 
