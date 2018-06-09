@@ -23,8 +23,8 @@ gdb: boot.iso
 	qemu-system-i386 -cdrom boot.iso -m 128M -gdb tcp::1234 -S &
 	gdb -s boot.bin
 
-test: boot.iso
-	qemu-system-i386 -cdrom boot.iso -m 128M -usb -usbdevice disk:format=raw:TAGS
+test: boot.iso usb
+	qemu-system-i386 -cdrom boot.iso -m 128M -usb -usbdevice disk:format=raw:usb
 
 premake:
 	./utils/pci_gener/generdata.sh
@@ -52,14 +52,19 @@ build/%.d: src/%.c
 	./makedeps.awk -v inc=include -v build=build $< > $@
 #	$(CC) $(CFLAGS) -MM $< | sed -e "s/^[^ \t]\+\.o:/build\/&/" > $@
 
+# Creates file for usb plugging for qemu
+usb:
+	dd if=/dev/zero of=$@ bs=1024 count=64000
+
 clean:
 	rm -rf iso/
 	rm -rf boot.bin boot.iso
 	rm -rf $(obj)
 
-fullclean:
-	rm -rf $(dep)
+fullclean: clean
+	rm -rf usb
 	rm -rf src/pci_db.c
+	rm -rf $(dep)
 
 .PHONY: fullclean clean debug test make premake
 .SECONDARY: $(dep)

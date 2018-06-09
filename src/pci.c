@@ -182,15 +182,16 @@ pci_init(void)
 				 */
 				lp = pci_ext_db_lookup(np);
 				if (!lp) {
-					dprintf("\tWOW! Unknown device %04x from vendor %04x!\n\n",
-						np->st.dev, np->st.vendor);
+//					dprintf("\tWOW! Unknown device %04x from vendor %04x!\n",
+//						np->st.dev, np->st.vendor);
 				}
 				else {
 					dprintf("\tvendor %s, device %s\n",
 						lp->vendor_name, lp->dev_name ? lp->dev_name : "(null)");
-					if (lp->subsys_name)
-						dprintf("\tsub_sys %s\n\n", lp->subsys_name);
+//					if (lp->subsys_name)
+//						dprintf("\tsub_sys %s\n", lp->subsys_name);
 				}
+				dprintf("\n");
 
 				xmalloc(np->next, sizeof(struct pci_dev_lst));
 				np->next->next = NULL;
@@ -198,7 +199,7 @@ pci_init(void)
 		}
 	}
 
-	dprintf("Total PCI: %d!\n", dev_cnt);
+//	dprintf("Total PCI: %d!\n", dev_cnt);
 
 	bfree(np->next);
 
