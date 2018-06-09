@@ -26,10 +26,13 @@ gdb: boot.iso
 test: boot.iso
 	qemu-system-i386 -cdrom boot.iso -m 128M
 
+premake:
+	./utils/pci_gener/generdata.sh
+
 boot.bin: src/boot.S $(obj)
 	$(CC) $(CFLAGS) -T $(KERNEL_LD) -o $@ $^ -lgcc
 
-boot.iso: boot.bin
+boot.iso: premake boot.bin
 	mkdir -p iso/boot/grub
 	cp $(STAGE2) iso/boot/grub/stage2_eltorito
 	cp boot.bin iso/boot/boot.bin
@@ -57,7 +60,7 @@ clean:
 cleandeps:
 	rm -rf $(dep)
 
-.PHONY: clean debug test make
+.PHONY: clean debug test make premake
 .SECONDARY: $(dep)
 
 ifneq "$(MAKECMDGOALS)" "clean"

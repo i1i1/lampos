@@ -4,6 +4,7 @@
 
 #include "pci.h"
 
+
 enum pci_ports {
 	CFG_ADDR = 0xCF8,
 	CFG_DATA = 0xCFC,
@@ -117,7 +118,7 @@ struct pci_02h {
 
 struct pci_dev {
 	uint16_t vendor;
-	uint16_t device;
+	uint16_t dev;
 
 	uint16_t comand;
 	uint16_t status;
@@ -185,6 +186,37 @@ cfg_inl(uint8_t bus, uint8_t dev, uint8_t func, uint8_t off)
 	return inl(CFG_DATA);
 }
 
+static struct pci_linux *
+pci_linux_lookup(struct pci_dev *d)
+{
+	int i, h = d->header % 128;
+	struct pci_linux *cs;
+
+	for (i = 0, cs = pci_db; i < pci_db_n; i++, cs++) {
+		switch (h) {
+		case 0:
+			if (cs->vendor != d->vendor)
+				continue;
+			if (cs->dev != d->dev && cs->dev_name != NULL)
+				continue;
+			if (cs->dev != d->dev && cs->dev_name != NULL)
+				continue;
+			if ((cs->subvendor != d->u._00.subvendor
+			     || cs->subdev != d->u._00.subdev) && cs->dev_name != NULL)
+				continue;
+			return cs;
+		case 1:
+//			break;
+		case 2:
+//			break;
+		default:
+			return NULL;
+		}
+	}
+
+	return NULL;
+}
+
 void
 pci_init(void)
 {
@@ -196,7 +228,8 @@ pci_init(void)
 
 	int bus, dev, i;
 	struct pci_dev_lst tmp, *np;
-	size_t *sp;
+	struct pci_linux *lp;
+	uint32_t *sp;
 
 	xmalloc(head, sizeof(struct pci_dev_lst));
 	tmp.next = head;
@@ -227,20 +260,15 @@ pci_init(void)
 			 * http://pci-ids.ucw.cz/v2.2/pci.ids
 			 * Data updates every day
 			 */
-			dprintf("\tvendor %x, device %x, ",
-				np->st.vendor, np->st.device);
-
-			if (np->st.header % 128 == 0x00)
-				dprintf("sub_vendor %x, sub_device %x",
-					np->st.u._00.subvendor,
-					np->st.u._00.subdev);
-			else if (np->st.header % 128 == 0x01)
-				dprintf("PCI to PCI");
-			else if (np->st.header % 128 == 0x02)
-				dprintf("sub_vendor %x, sub_device %x, CARDbus",
-					np->st.u._02.subvendor,
-					np->st.u._02.subdev);
-			dprintf("\n\n");
+			lp = pci_linux_lookup(&np->st);
+			if (!lp) {
+				dprintf("\tWOW! Unknows device!\n\n");
+			}
+			else {
+				dprintf("\tvendor %s, device %s\n",
+					lp->vendor_name, lp->dev_name);
+				dprintf("\tsub_sys %s\n\n", lp->subsys_name);
+			}
 
 			xmalloc(np->next, sizeof(struct pci_dev_lst));
 			np->next->next = NULL;
