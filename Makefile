@@ -1,7 +1,7 @@
 KERNEL_LD = src/link-kernel.ld
 STAGE2 = build/stage2_eltorito
 GENISOIMAGE = genisoimage
-CC = gcc
+CC = i586-elf-gcc
 CFLAGS = -Wall -Iinclude -nostdlib -ffreestanding -m32 -std=gnu90
 
 src = $(wildcard src/*.c)

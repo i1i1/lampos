@@ -15,7 +15,7 @@ echo '#include "defs.h"' > $OUT
 echo '#include "pci.h"' >> $OUT
 echo >> $OUT
 echo "int pci_db_n = $N;">> $OUT
-echo "struct pci_linux pci_db[$N] = {" >> $OUT
+echo "struct pci_ext_db pci_db[$N] = {" >> $OUT
 cat $ROOT/out >> $OUT
 echo "};" >> $OUT
 
