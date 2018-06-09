@@ -190,7 +190,8 @@ bfree_found:
 	if (np->next && np->next->flag == BUDDY_FREE && mergeable(np, np->next, i)) {
 		if (np->prev) {
 			np->prev->next = np->next->next;
-			np->next->next->prev = np->prev;
+			if (np->next->next)
+				np->next->next->prev = np->prev;
 		}
 		else {
 			buddies[i] = np->next->next;

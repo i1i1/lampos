@@ -4,13 +4,9 @@ ROOT=$(dirname $0)/
 IN=$ROOT/pci.ids
 OUT=$ROOT/../../src/pci_db.c
 
-wget http://pci-ids.ucw.cz/v2.2/pci.ids -q -O "$IN" || cp "$IN.bak" "$IN"
-cp "$IN" "$IN.bak"
+[ -e $OUT ] && exit 0
 
-if [ -e $OUT -a $(md5sum $IN|cut -d' ' -f1) = $(md5sum $IN.bak|cut -d' ' -f1) ]
-then
-	exit 0
-fi
+wget http://pci-ids.ucw.cz/v2.2/pci.ids -q -O "$IN"
 
 $ROOT/struct.awk < "$IN" > $ROOT/out
 N=$(wc -l $ROOT/out |cut -d' ' -f1)

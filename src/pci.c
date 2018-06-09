@@ -148,6 +148,7 @@ struct pci_dev_lst {
 	struct pci_dev_lst *next;
 	uint8_t bus;
 	uint8_t dev;
+	uint8_t func;
 
 	struct pci_dev st;
 };
@@ -226,7 +227,8 @@ pci_init(void)
 				a = p;			\
 			} while (0);
 
-	int bus, dev, i;
+	int bus, dev, i, func, mfunc;
+	uint16_t h;
 	struct pci_dev_lst tmp, *np;
 	struct pci_linux *lp;
 	uint32_t *sp;
@@ -243,35 +245,49 @@ pci_init(void)
 			if ((uint16_t)cfg_inl(bus, dev, 0, 0) == 0xFFFF)
 				continue;
 
-			np = np->next;
-			np->bus = bus;
-			np->dev = dev;
-			dev_cnt++;
+			h = cfg_inl(bus, dev, 0, 0x0C) >> 16;
+			mfunc = (h >> 7) ? 8 : 1;
 
-			sp = (void *)&(np->st);
+			for (func = 0; func < mfunc; func++) {
+				/* If (vendor == 0xFFFF) then continue */
+				if ((uint16_t)cfg_inl(bus, dev, func, 0) == 0xFFFF)
+					continue;
 
-			for (i = 0; i < sizeof(np->st) - sizeof(void *); i += 4)
-				*sp++ = cfg_inl(bus, dev, 0, i);
+				np = np->next;
+				np->bus = bus;
+				np->dev = dev;
+				np->func = func;
+				dev_cnt++;
 
-			dprintf("\tpci_bus %d, pci_dev %d, header %02xh\n",
-				np->bus, np->dev, (np->st.header << 1) >> 1);
+				sp = (void *)&(np->st);
 
-			/* Can index device via info from:
-			 * http://pci-ids.ucw.cz/v2.2/pci.ids
-			 * Data updates every day
-			 */
-			lp = pci_linux_lookup(&np->st);
-			if (!lp) {
-				dprintf("\tWOW! Unknows device!\n\n");
+				for (i = 0; i < sizeof(np->st); i += 4)
+					*sp++ = cfg_inl(bus, dev, func, i);
+
+				dprintf("\tpci_bus %d, pci_dev %d, func %d\n"
+					"\theader %02xh, class %xh, subclass %xh, prog_if %xh\n",
+					np->bus, np->dev, np->func, np->st.header % 128,
+					np->st.class_code, np->st.subclass, np->st.prog_if);
+
+				/* Can index device via info from:
+				 * http://pci-ids.ucw.cz/v2.2/pci.ids
+				 * Data updates every day
+				 */
+				lp = pci_linux_lookup(&np->st);
+				if (!lp) {
+					dprintf("\tWOW! Unknown device %04x from vendor %04x!\n\n",
+						np->st.dev, np->st.vendor);
+				}
+				else {
+					dprintf("\tvendor %s, device %s\n",
+						lp->vendor_name, lp->dev_name ? lp->dev_name : "(null)");
+					if (lp->subsys_name)
+						dprintf("\tsub_sys %s\n\n", lp->subsys_name);
+				}
+
+				xmalloc(np->next, sizeof(struct pci_dev_lst));
+				np->next->next = NULL;
 			}
-			else {
-				dprintf("\tvendor %s, device %s\n",
-					lp->vendor_name, lp->dev_name);
-				dprintf("\tsub_sys %s\n\n", lp->subsys_name);
-			}
-
-			xmalloc(np->next, sizeof(struct pci_dev_lst));
-			np->next->next = NULL;
 		}
 	}
 

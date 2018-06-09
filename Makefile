@@ -24,7 +24,7 @@ gdb: boot.iso
 	gdb -s boot.bin
 
 test: boot.iso
-	qemu-system-i386 -cdrom boot.iso -m 128M
+	qemu-system-i386 -cdrom boot.iso -m 128M -usb -usbdevice disk:format=raw:TAGS
 
 premake:
 	./utils/pci_gener/generdata.sh
@@ -57,10 +57,11 @@ clean:
 	rm -rf boot.bin boot.iso
 	rm -rf $(obj)
 
-cleandeps:
+fullclean:
 	rm -rf $(dep)
+	rm -rf src/pci_db.c
 
-.PHONY: clean debug test make premake
+.PHONY: fullclean clean debug test make premake
 .SECONDARY: $(dep)
 
 ifneq "$(MAKECMDGOALS)" "clean"
