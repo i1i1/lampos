@@ -87,6 +87,12 @@ physpgfree(paddr_t phys)
 }
 
 void
+physpgadd(paddr_t p)
+{
+	physpgfree(p);
+}
+
+void
 physpginfo()
 {
 	size_t used, free, total;
@@ -182,6 +188,6 @@ physpginit(struct mm_area **mmap, int mmap_len)
 
 	for (i = 0x0; i < physpgtotal; i += 0x1000)
 		if (in_pg(i) && in_mm_area(i, mmap, mmap_len))
-			physpgfree(i);
+			physpgadd(i);
 }
 

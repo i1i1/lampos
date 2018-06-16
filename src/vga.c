@@ -140,7 +140,7 @@ vga_init()
 	y_coord = 0;
 	crlf = 1;
 	vga_set_bgcolor(COLOR_BLACK);
-	vga_set_fgcolor(COLOR_GREEN);
+	vga_set_fgcolor(COLOR_LIGHT_GREY);
 
 	/* Clear screen with default colors. */
 	vga_clear_screen();

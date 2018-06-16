@@ -149,6 +149,7 @@ pci_init(void)
 				np->bus = tmp.bus;
 				np->dev = tmp.dev;
 				np->func = tmp.func;
+				np->g = 0;
 				dev_cnt++;
 
 				sp = (void *)&(np->st);
@@ -182,12 +183,12 @@ pci_init(void)
 				 */
 				lp = pci_ext_db_lookup(np);
 				if (!lp) {
-					dprintf("\tWOW! Unknown device %04x from vendor %04x!\n\n",
-						np->st.dev, np->st.vendor);
+					dprintf("\tUnknown device %04x from vendor %04x!\n\n",
+							np->st.dev, np->st.vendor);
 				}
 				else {
 					dprintf("\tvendor %s, device %s\n",
-						lp->vendor_name, lp->dev_name ? lp->dev_name : "(null)");
+							lp->vendor_name, lp->dev_name ? lp->dev_name : "(null)");
 					if (lp->subsys_name)
 						dprintf("\tsub_sys %s\n\n", lp->subsys_name);
 				}
