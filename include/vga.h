@@ -24,6 +24,8 @@
 
 void vga_init();
 
+void vga_history_init();
+
 void vga_clear_screen();
 
 void vga_move_hardware_cursor(int x, int y);
@@ -41,6 +43,10 @@ void vga_get_cursor(int *x, int *y);
 int vga_get_bgcolor();
 
 int vga_get_fgcolor();
+
+void vga_screen_scroll_up();
+
+void vga_screen_scroll_down();
 
 
 #endif

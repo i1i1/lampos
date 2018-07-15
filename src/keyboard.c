@@ -121,9 +121,7 @@ kbd_irq()
 		break;
 	case KBD_PRESSED_SPECIAL:
 		switch (chr) {
-		case '-':
-			/* Backspace */
-			chr = '\b';
+		case '\b':
 		case '\n':
 		case ' ':
 			buf_putc(chr);
@@ -131,6 +129,12 @@ kbd_irq()
 			break;
 		case 's':
 			shift = 1;
+			break;
+		case '-':
+			vga_screen_scroll_down();
+			break;
+		case '+':
+			vga_screen_scroll_up();
 			break;
 		default:
 			break;

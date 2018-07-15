@@ -1,10 +1,10 @@
 KERNEL_LD = src/link-kernel.ld
 STAGE2 = build/stage2_eltorito
 GENISOIMAGE = genisoimage
-CC = i586-elf-gcc
+CC = gcc
 CFLAGS = -Wall -Iinclude -nostdlib -ffreestanding -m32 -std=gnu90
 
-src = $(wildcard src/*.c)
+src = $(wildcard src/*.c) src/pci_db.c
 hdr = $(wildcard include/*.h)
 
 obj = $(subst src, build, $(src:.c=.o))
@@ -24,15 +24,15 @@ gdb: boot.iso
 	gdb -s boot.bin
 
 test: boot.iso usb
-	qemu-system-i386 -cdrom boot.iso -m 128M -usb -usbdevice disk:format=raw:usb
+	qemu-system-i386 -cdrom boot.iso -m 128M -usb -usbdevice disk:format=raw:usb -serial file:com1
 
-premake:
+src/pci_db.c:
 	./utils/pci_gener/generdata.sh
 
 boot.bin: src/boot.S $(obj)
 	$(CC) $(CFLAGS) -T $(KERNEL_LD) -o $@ $^ -lgcc
 
-boot.iso: premake boot.bin
+boot.iso: boot.bin
 	mkdir -p iso/boot/grub
 	cp $(STAGE2) iso/boot/grub/stage2_eltorito
 	cp boot.bin iso/boot/boot.bin
@@ -66,7 +66,7 @@ fullclean: clean
 	rm -rf src/pci_db.c
 	rm -rf $(dep)
 
-.PHONY: fullclean clean debug test make premake
+.PHONY: fullclean clean debug test make
 .SECONDARY: $(dep)
 
 ifneq "$(MAKECMDGOALS)" "clean"

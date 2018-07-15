@@ -6,19 +6,19 @@
 #include "physpgalloc.h"
 
 
-struct physarea_lst {
+static struct physarea_lst {
 	struct physarea_lst *next;
 	paddr_t beg;
 	paddr_t end;
 
 } *head = NULL;
 
-size_t physpgtotal = 0;
+static paddr_t physpgtotal = 0;
 
 paddr_t
 physpgmalloc()
 {
-	size_t pg;
+	paddr_t pg;
 	void *tmp;
 
 	if (!head)
@@ -95,7 +95,7 @@ physpgadd(paddr_t p)
 void
 physpginfo()
 {
-	size_t used, free, total;
+	paddr_t used, free, total;
 	struct physarea_lst *np;
 
 	free = 0;
@@ -148,9 +148,9 @@ physpginfo()
 }
 
 int
-in_pg(size_t phys)
+in_pg(paddr_t phys)
 {
-	size_t pg;
+	paddr_t pg;
 	vaddr_t tmp;
 
 	tmp.num = phys + KERNEL_BASE;
@@ -168,7 +168,7 @@ in_pg(size_t phys)
 }
 
 int
-in_mm_area(size_t phys, struct mm_area **mmap, int mmap_len)
+in_mm_area(paddr_t phys, struct mm_area **mmap, int mmap_len)
 {
 	int i;
 
@@ -182,7 +182,7 @@ in_mm_area(size_t phys, struct mm_area **mmap, int mmap_len)
 void
 physpginit(struct mm_area **mmap, int mmap_len)
 {
-	size_t i;
+	paddr_t i;
 
 	physpgtotal = mmap[mmap_len - 1]->end;
 

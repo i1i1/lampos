@@ -152,7 +152,7 @@ struct pci_dev_lst {
 	/* Displays if device has been
 	 * already given via pci_get_dev
 	 */
-	uint8_t g;
+	uint8_t ref;
 
 	struct pci_dev st;
 

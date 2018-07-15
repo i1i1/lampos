@@ -50,9 +50,9 @@ pci_get_dev(uint8_t class, uint8_t subclass)
 	struct pci_dev_lst *dp;
 
 	for (dp = head; dp != NULL; dp = dp->next) {
-		if (dp->g == 0 && dp->st.class == class
+		if (dp->ref == 0 && dp->st.class == class
 		    && dp->st.subclass == subclass) {
-			dp->g++;
+			dp->ref++;
 			return dp;
 		}
 	}
@@ -67,7 +67,7 @@ pci_unget_dev(struct pci_dev_lst *dp)
 
 	for (np = head; np != NULL; dp = dp->next) {
 		if (np == dp) {
-			dp->g = 0;
+			dp->ref = 0;
 			return;
 		}
 	}
@@ -107,25 +107,19 @@ pci_ext_db_lookup(struct pci_dev_lst *d)
 }
 
 void
-pci_init(void)
+pci_dev_scan()
 {
+	int i, mfunc, h;
+	struct pci_dev_lst tmp, *np;
+	uint32_t *sp, size;
+
 #define xmalloc(a, n)	do {				\
 				void *p = balloc(n);	\
 				if (p == NULL) return;	\
 				a = p;			\
 			} while (0);
 
-	int i, mfunc;
-	uint16_t h;
-	struct pci_dev_lst tmp, *np;
-	struct pci_ext_db *lp;
-	uint32_t *sp;
-
-	xmalloc(head, sizeof(struct pci_dev_lst));
-	tmp.next = head;
-	np = &tmp;
-
-	dprintf("\n\nPCI:\n\n");
+	np = head;
 
 	for (tmp.bus = 0; tmp.bus < 256; tmp.bus++) {
 		for (tmp.dev = 0; tmp.dev < 32; tmp.dev++) {
@@ -145,65 +139,76 @@ pci_init(void)
 
 				h = (pci_inl(&tmp, 0x0C) >> 16) % 128;
 
-				np = np->next;
+				if (!head) {
+					xmalloc(head, sizeof(tmp));
+					np = head;
+				} else {
+					xmalloc(np->next, sizeof(tmp));
+					np = np->next;
+				}
+
 				np->bus = tmp.bus;
 				np->dev = tmp.dev;
 				np->func = tmp.func;
-				np->g = 0;
+				np->ref = 0;
+				np->next = NULL;
+
 				dev_cnt++;
 
 				sp = (void *)&(np->st);
 
-				for (i = 0; i < sizeof(np->st); i += 4)
+				if (h == 0)
+					size = sizeof(np->st) + sizeof(np->u._00);
+				else if (h == 1)
+					size = sizeof(np->st) + sizeof(np->u._01);
+				else if (h == 2)
+					size = sizeof(np->st) + sizeof(np->u._02);
+				else
+					panic("Unknown type of pci device!");
+
+				for (i = 0; i < size; i += 4)
 					*sp++ = pci_inl(np, i);
-
-				switch (h) {
-				case 0x00:
-					for (; i < sizeof(np->st) + sizeof(np->u._00); i += 4)
-						*sp++ = pci_inl(np, i);
-					break;
-				case 0x01:
-					for (; i < sizeof(np->st) + sizeof(np->u._01); i += 4)
-						*sp++ = pci_inl(np, i);
-					break;
-				case 0x02:
-					for (; i < sizeof(np->st) + sizeof(np->u._02); i += 4)
-						*sp++ = pci_inl(np, i);
-					break;
-				}
-
-				dprintf("\tpci_bus %d, pci_dev %d, func %d\n"
-					"\theader %02xh, class %xh, subclass %xh, prog_if %xh\n",
-					np->bus, np->dev, np->func, np->st.header % 128,
-					np->st.class, np->st.subclass, np->st.prog_if);
-
-				/* Can index device via info from:
-				 * http://pci-ids.ucw.cz/v2.2/pci.ids
-				 * Data updates every day
-				 */
-				lp = pci_ext_db_lookup(np);
-				if (!lp) {
-//					dprintf("\tWOW! Unknown device %04x from vendor %04x!\n",
-//						np->st.dev, np->st.vendor);
-				}
-				else {
-					dprintf("\tvendor %s, device %s\n",
-						lp->vendor_name, lp->dev_name ? lp->dev_name : "(null)");
-//					if (lp->subsys_name)
-//						dprintf("\tsub_sys %s\n", lp->subsys_name);
-				}
-				dprintf("\n");
-
-				xmalloc(np->next, sizeof(struct pci_dev_lst));
-				np->next->next = NULL;
 			}
 		}
 	}
-
-//	dprintf("Total PCI: %d!\n", dev_cnt);
-
-	bfree(np->next);
-
 #undef xmalloc
+}
+
+void
+pci_print_info()
+{
+	struct pci_dev_lst *np;
+	const struct pci_ext_db *info;
+
+	for (np = head; np != NULL; np = np->next) {
+		dprintf("\tpci_bus %d, pci_dev %d, func %d\n"
+			"\theader %02xh, class %xh, subclass %xh, prog_if %xh\n",
+			np->bus, np->dev, np->func, np->st.header % 128,
+			np->st.class, np->st.subclass, np->st.prog_if);
+
+		/* Indexes devices via http://pci-ids.ucw.cz/v2.2/pci.ids
+		 * Data updates often
+		 */
+		info = pci_ext_db_lookup(np);
+		if (!info) {
+			dprintf("\tWOW! Unknown device %04x from vendor %04x!\n",
+				np->st.dev, np->st.vendor);
+		}
+		else {
+			dprintf("\tvendor %s, device %s\n",
+				info->vendor_name, info->dev_name ? info->dev_name : "(null)");
+			if (info->subsys_name)
+				dprintf("\tsub_sys %s\n", info->subsys_name);
+		}
+		dprintf("\n");
+	}
+	dprintf("TOTAL: %d devices\n", dev_cnt);
+}
+
+void
+pci_init(void)
+{
+	pci_dev_scan();
+	pci_print_info();
 }
 

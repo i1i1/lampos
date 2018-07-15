@@ -48,6 +48,7 @@ main(size_t cr0, struct mb_info *mb)
 	segm_init();
 	mb_parse(mb, &mm, &mmlen);
 	mem_init(mm, mmlen);
+	vga_history_init();
 
 	pit_init();
 	ps_2_init();
