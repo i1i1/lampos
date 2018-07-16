@@ -139,7 +139,7 @@ vga_clear_screen()
 void
 vga_history_init()
 {
-	history = balloc(width * height * sizeof(uint16_t));
+	history = balloc(width * MAX_HISTORY_LINES * sizeof(uint16_t));
 
 	if (history) {
 		history_enabled = 1;
