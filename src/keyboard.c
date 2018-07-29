@@ -21,6 +21,7 @@ static volatile int end = 0;
 static kbd_type kbd_cur_set;
 
 static int shift = 0;
+static int cntrl = 0;
 
 kbd_code_type
 kbd_get_type_code(kbd_code c)
@@ -110,9 +111,21 @@ kbd_irq()
 	/* Should be adding character to the key_buf */
 	switch (tp) {
 	case KBD_PRESSED:
-		//dprintf("Key '%c' pressed!\n", kbd_get_char_code(c));
+		if (cntrl) {
+			switch (chr) {
+			case 'j':
+				vga_history_up();
+				break;
+			case 'k':
+				vga_history_down();
+				break;
+			}
+			break;
+		}
+
 		if (shift)
 			chr = upcase(chr);
+
 		buf_putc(chr);
 		vga_putc(chr);
 		break;
@@ -130,11 +143,8 @@ kbd_irq()
 		case 's':
 			shift = 1;
 			break;
-		case '-':
-			vga_screen_scroll_down();
-			break;
-		case '+':
-			vga_screen_scroll_up();
+		case 'c':
+			cntrl = 1;
 			break;
 		default:
 			break;
@@ -144,6 +154,9 @@ kbd_irq()
 		switch (chr) {
 		case 's':
 			shift = 0;
+			break;
+		case 'c':
+			cntrl = 0;
 			break;
 		default:
 			break;

@@ -11,10 +11,10 @@
 extern void pit_asm_handler();
 
 enum pit_channel {
-	TIP_CHAN0 = 0x40,
-	TIP_CHAN1 = 0x41,
-	TIP_CHAN2 = 0x42,
-	TIP_CHAN_CMD = 0x43,
+	PIT_CHAN0 = 0x40,
+	PIT_CHAN1 = 0x41,
+	PIT_CHAN2 = 0x42,
+	PIT_CHAN_CMD = 0x43,
 };
 
 enum pit_cmd {
@@ -59,9 +59,9 @@ pit_set_freq(int hz)
 	divisor &= 0xffff;
 
 	iprintf("divisor = %x\n", divisor);
-	outb(TIP_CHAN_CMD, CHAN_0 | ACC_BOTH | OP_RATEGEN | MODE_BINARY);
-	outb(TIP_CHAN0, divisor & 0xff);
-	outb(TIP_CHAN0, divisor >> 8);
+	outb(PIT_CHAN_CMD, CHAN_0 | ACC_BOTH | OP_RATEGEN | MODE_BINARY);
+	outb(PIT_CHAN0, divisor & 0xff);
+	outb(PIT_CHAN0, divisor >> 8);
 }
 
 void

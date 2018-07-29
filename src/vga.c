@@ -1,7 +1,6 @@
 #include "kernel.h"
 #include "buddyalloc.h"
 #include "vga.h"
-#include "pit.h"
 
 /* VGA registers accessed through port `base_port'. */
 #define VGA_CURSOR_MSB		0x0E
@@ -26,7 +25,9 @@
 #define COLOR_YELLOW		(COLOR_BROWN | COLOR_BRIGHT)
 #define COLOR_WHITE		(COLOR_LIGHT_GREY | COLOR_BRIGHT)
 
-#define MAX_HISTORY_LINES	200
+
+#define HISTORY_LINES	200
+
 
 static unsigned int base_port;
 static uint16_t *buffer = NULL;
@@ -36,10 +37,14 @@ static int bg_color = COLOR_BLACK, fg_color = COLOR_LIGHT_GREY;
 static uint32_t tabs[8];
 static int crlf = 0;
 
-int max_top_screen_line = 0;
-int top_screen_line = 0;
-uint16_t *history = NULL;
+
+char *history = NULL;
 int history_enabled = 0;
+int history_screen_line;
+int history_reset_line;
+
+/* For optimization of vga_history_update */
+int history_last_line;
 
 
 static unsigned int
@@ -112,7 +117,6 @@ vga_set_bgcolor(int color)
 }
 
 /* This function clears the screen using current background/foreground color. */
-/* Also clears history. */
 void
 vga_clear_screen()
 {
@@ -130,23 +134,8 @@ vga_clear_screen()
 				vga_make_char(' ', fg_color, bg_color);
 		}
 	}
-
-	if (history_enabled)
-		memset(history, 0,
-		       sizeof(uint16_t) * MAX_HISTORY_LINES * width);
 }
 
-void
-vga_history_init()
-{
-	history = balloc(width * MAX_HISTORY_LINES * sizeof(uint16_t));
-
-	if (history) {
-		history_enabled = 1;
-		vga_clear_screen();
-		dprintf("History should work now!\n");
-	}
-}
 
 void
 vga_init()
@@ -179,20 +168,105 @@ vga_init()
 }
 
 static void
-vga_scroll_up_old()
+vga_history_scroll_up()
 {
-	int x, y;
- 
-	for (y = 0; y < height-1; y++) {
+	int hist_y;
+	
+	if (!history || !history_enabled)
+		return;
+
+	hist_y = (history_reset_line + height) % HISTORY_LINES;
+	memset(history + hist_y*width, ' ', width);
+
+	history_screen_line = (history_screen_line + 1) % HISTORY_LINES;
+	history_reset_line = history_screen_line;
+}
+
+static void
+vga_history_update()
+{
+	int x, y, hist_y;
+	char c;
+	uint16_t chr;
+
+	if (!history || !history_enabled)
+		return;
+
+	if (history_last_line == history_screen_line)
+		return;
+
+	for (y = 0; y < height; y++) {
 		for (x = 0; x < width; x++) {
-			buffer[y*width + x] = buffer[(y+1)*width + x];
+			hist_y = (history_screen_line+y) % HISTORY_LINES;
+			c = history[hist_y * width + x];
+			chr = vga_make_char(c, fg_color, bg_color);
+			buffer[y * width + x] = chr;
 		}
 	}
 
-	for (x = 0; x < width; x++) {
-		buffer[y*width + x] =
-			vga_make_char(' ', fg_color, bg_color);
-	}
+	history_last_line = history_screen_line;
+}
+
+void
+vga_history_up()
+{
+	if (!history || !history_enabled)
+		return;
+
+	if (history_reset_line == history_screen_line)
+		return;
+
+	history_screen_line = (history_screen_line + 1) % HISTORY_LINES;
+
+	vga_history_update();
+}
+
+void
+vga_history_down()
+{
+	if (!history || !history_enabled)
+		return;
+
+	if ((history_reset_line + height) % HISTORY_LINES
+	    == history_screen_line)
+		return;
+
+	history_screen_line = (history_screen_line - 1) % HISTORY_LINES;
+
+	vga_history_update();
+}
+
+static void
+vga_history_clear()
+{
+	if (!history || !history_enabled)
+		return;
+
+	history_screen_line = 0;
+	history_reset_line = 0;
+
+	memset(history, ' ', HISTORY_LINES * width);
+}
+
+int
+vga_history_init()
+{
+	if (history_enabled)
+		return 0;
+
+	history = balloc(HISTORY_LINES * width);
+
+	if (!history)
+		return 1;
+
+	history_enabled = 1;
+	history_screen_line = 0;
+	history_reset_line = 0;
+
+	vga_clear_screen();
+	vga_history_clear();
+
+	return 0;
 }
 
 static void
@@ -200,89 +274,14 @@ vga_scroll_up()
 {
 	int x, y;
 
-	if (max_top_screen_line == MAX_HISTORY_LINES - height) {
-		for (y = 0; y < max_top_screen_line-1; y++) {
-			for (x = 0; x < width; x++) {
-				history[y*width + x] =
-					history[(y+1)*width + x];
-			}
-		}
-		max_top_screen_line--;
-		top_screen_line--;
-	}
-
-	/* Save top line in history */
-	for (x = 0; x < width; x++) {
-		history[top_screen_line*width + x] = buffer[x];
-	}
-
 	for (y = 0; y < height-1; y++) {
 		for (x = 0; x < width; x++) {
 			buffer[y*width + x] = buffer[(y+1)*width + x];
 		}
 	}
 
-	for (x = 0; x < width; x++) {
-		buffer[y*width + x] =
-			vga_make_char(' ', fg_color, bg_color);
-	}
-
-	max_top_screen_line++;
-	top_screen_line++;
-}
-
-void
-vga_screen_scroll_up()
-{
-	int x, y;
-
-	if (max_top_screen_line == top_screen_line)
-		return;
-
-	for (y = 0; y < height; y++) {
-		for (x = 0; x < width; x++) {
-			buffer[y*width + x] =
-				history[(top_screen_line+y+1)*width + x];
-		}
-	}
-
-	top_screen_line++;
-}
-
-void
-vga_screen_scroll_down()
-{
-	int x, y;
-
-	if (top_screen_line == 0)
-		return;
-
-	for (y = 0; y < height; y++) {
-		for (x = 0; x < width; x++) {
-			buffer[y*width + x] =
-				history[(top_screen_line+y-1)*width + x];
-		}
-	}
-
-	top_screen_line--;
-}
-
-void
-vga_reset_screen()
-{
-	int x, y;
-
-	if (top_screen_line == max_top_screen_line)
-		return;
-
-	top_screen_line = max_top_screen_line;
-
-	for (y = 0; y < height; y++) {
-		for (x = 0; x < width; x++) {
-			buffer[y*width + x] =
-				history[(top_screen_line + y)*width + x];
-		}
-	}
+	for (x = 0; x < width; x++)
+		buffer[y*width + x] = vga_make_char(' ', fg_color, bg_color);
 }
 
 void
@@ -294,7 +293,10 @@ vga_putc(int c)
 	if (buffer == NULL)
 		return;
 
-	vga_reset_screen();
+	if (history_enabled) {
+		history_screen_line = history_reset_line;
+		vga_history_update();
+	}
 
 	switch (c) {
 	case '\a':
@@ -306,9 +308,7 @@ vga_putc(int c)
 			x_coord--;
 			buffer[width*y_coord + x_coord] =
 				vga_make_char(' ', fg_color, bg_color);
-			if (history_enabled)
-				history[(top_screen_line+y_coord)*width + x_coord] =
-					vga_make_char(' ', fg_color, bg_color);
+			history[(history_screen_line+y_coord)*width + x_coord] = ' ';
 		}
 		break;
 	case '\t':
@@ -327,6 +327,8 @@ vga_putc(int c)
 		break;
 	case '\f':
 		vga_clear_screen();
+		if (history_enabled)
+			vga_history_clear();
 		break;
 	case '\r':
 		x_coord = 0;
@@ -335,8 +337,11 @@ vga_putc(int c)
 		/* Put printable character to screen. */
 		chr = vga_make_char(c, fg_color, bg_color);
 		buffer[width*y_coord + x_coord] = chr;
-		if (history_enabled)
-			history[(top_screen_line+y_coord)*width + x_coord] = chr;
+		if (history_enabled && history) {
+			int hist_y;
+			hist_y = (history_screen_line+y_coord) % HISTORY_LINES;
+			history[hist_y * width + x_coord] = c;
+		}
 		x_coord++;
 		break;
 	}
@@ -347,9 +352,9 @@ vga_putc(int c)
 	}
 	if (y_coord >= height) {
 		if (history_enabled)
-			vga_scroll_up();
+			vga_history_scroll_up();
 		else
-			vga_scroll_up_old();
+			vga_scroll_up();
 		y_coord--;
 	}
 

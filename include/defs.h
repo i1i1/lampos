@@ -3,7 +3,7 @@
 
 #define KERNEL_BASE		0xC0000000
 
-#define PGDIR			(KERNEL_BASE + 0x400000)
+#define PGDIR			(KERNEL_BASE + 0x7F0000)
 #define PGTBL0			(PGDIR + 0x1000)
 #define PGTBL1			(PGDIR + 0x2000)
 #define PGTEMPO			(PGDIR + 0x3000)

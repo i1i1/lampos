@@ -13,7 +13,7 @@ static struct physarea_lst {
 
 } *head = NULL;
 
-static paddr_t physpgtotal = 0;
+size_t physpgtotal = 0;
 
 paddr_t
 physpgmalloc()
@@ -95,7 +95,7 @@ physpgadd(paddr_t p)
 void
 physpginfo()
 {
-	paddr_t used, free, total;
+	size_t used, free, total;
 	struct physarea_lst *np;
 
 	free = 0;

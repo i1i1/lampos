@@ -10,7 +10,7 @@ struct {
 #define key(i, chr, type) [i] = {.c = chr, .tp = type},
 	[KBD_SET_1] = {
 		key(0x00, '\0', KBD_INVALID) // None
-		key(0x01, '?', KBD_PRESSED_SPECIAL) // Escape
+		key(0x01, 'e', KBD_PRESSED_SPECIAL) // Escape
 		key(0x02, '1', KBD_PRESSED)
 		key(0x03, '2', KBD_PRESSED)
 		key(0x04, '3', KBD_PRESSED)
@@ -84,11 +84,11 @@ struct {
 		key(0x47, '7', KBD_PRESSED)
 		key(0x48, '8', KBD_PRESSED)
 		key(0x49, '9', KBD_PRESSED)
-		key(0x4A, '-', KBD_PRESSED_SPECIAL)
+		key(0x4A, '-', KBD_PRESSED)
 		key(0x4B, '4', KBD_PRESSED)
 		key(0x4C, '5', KBD_PRESSED)
 		key(0x4D, '6', KBD_PRESSED)
-		key(0x4E, '+', KBD_PRESSED_SPECIAL)
+		key(0x4E, '+', KBD_PRESSED)
 		key(0x4F, '1', KBD_PRESSED)
 		key(0x50, '2', KBD_PRESSED)
 		key(0x51, '3', KBD_PRESSED)
@@ -111,7 +111,7 @@ struct {
 		key(0x8B, '0', KBD_RELEASED)
 		key(0x8C, '-', KBD_RELEASED)
 		key(0x8D, '=', KBD_RELEASED)
-		key(0x8E, '=', KBD_RELEASED_SPECIAL) // Backspace
+		key(0x8E, '\b', KBD_RELEASED_SPECIAL) // Backspace
 		key(0x8F, '\t', KBD_RELEASED)
 		key(0x90, 'q', KBD_RELEASED)
 		key(0x91, 'w', KBD_RELEASED)
@@ -172,7 +172,7 @@ struct {
 		key(0xC7, '7', KBD_RELEASED)
 		key(0xC8, '8', KBD_RELEASED)
 		key(0xC9, '9', KBD_RELEASED)
-		key(0xCA, '-', KBD_RELEASED_SPECIAL)
+		key(0xCA, '-', KBD_RELEASED)
 		key(0xCB, '4', KBD_RELEASED)
 		key(0xCC, '5', KBD_RELEASED)
 		key(0xCD, '6', KBD_RELEASED)

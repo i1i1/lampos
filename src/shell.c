@@ -11,6 +11,7 @@
 static int help(int argc, char **argv);
 static int testargs(int argc, char **argv);
 static int echo(int argc, char **argv);
+static int clear(int argc, char **argv);
 
 #define fwrap(f, name)				\
 	static int				\
@@ -20,12 +21,11 @@ static int echo(int argc, char **argv);
 		return 0;			\
 	}
 
-fwrap(vga_clear_screen, clear)
 fwrap(pginfo, freev)
 fwrap(physpginfo, freep)
 fwrap(balloc_info, freea)
-
 #undef fwrap
+
 
 static struct {
 	char *cmd;
@@ -75,6 +75,14 @@ echo(int argc, char **argv)
 	for (i = 1; i < argc; i++)
 		iprintf("%s ", argv[i]);
 	iprintf("\n");
+
+	return 0;
+}
+
+static int
+clear(int argc, char **argv)
+{
+	iprintf("\f");
 
 	return 0;
 }

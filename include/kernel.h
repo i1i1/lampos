@@ -21,7 +21,8 @@
 						iprintf("\n\nKernel panic:\n\t");\
 						iprintf(args);			\
 						iprintf("\n");			\
-						for (;;);			\
+						for (;;)			\
+							asm("hlt");		\
 					} while (0)
 
 #define assert_or_panic(cond, args...)	do {					\
