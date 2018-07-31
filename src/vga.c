@@ -26,7 +26,7 @@
 #define COLOR_WHITE		(COLOR_LIGHT_GREY | COLOR_BRIGHT)
 
 
-#define HISTORY_LINES	200
+#define HISTORY_LINES	(2*height)
 
 
 static unsigned int base_port;
@@ -40,6 +40,7 @@ static int crlf = 0;
 
 char *history = NULL;
 int history_enabled = 0;
+int history_top_line;
 int history_screen_line;
 int history_reset_line;
 
@@ -171,7 +172,7 @@ static void
 vga_history_scroll_up()
 {
 	int hist_y;
-	
+
 	if (!history || !history_enabled)
 		return;
 
@@ -180,6 +181,10 @@ vga_history_scroll_up()
 
 	history_screen_line = (history_screen_line + 1) % HISTORY_LINES;
 	history_reset_line = history_screen_line;
+
+	if ((history_reset_line + height - 1) % HISTORY_LINES
+	    == history_top_line)
+		history_top_line = (history_top_line + 1) % HISTORY_LINES;
 }
 
 static void
@@ -227,8 +232,7 @@ vga_history_down()
 	if (!history || !history_enabled)
 		return;
 
-	if ((history_reset_line + height) % HISTORY_LINES
-	    == history_screen_line)
+	if (history_screen_line == history_top_line)
 		return;
 
 	history_screen_line = (history_screen_line - 1) % HISTORY_LINES;
@@ -244,6 +248,7 @@ vga_history_clear()
 
 	history_screen_line = 0;
 	history_reset_line = 0;
+	history_top_line = 0;
 
 	memset(history, ' ', HISTORY_LINES * width);
 }
@@ -260,8 +265,6 @@ vga_history_init()
 		return 1;
 
 	history_enabled = 1;
-	history_screen_line = 0;
-	history_reset_line = 0;
 
 	vga_clear_screen();
 	vga_history_clear();

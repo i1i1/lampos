@@ -410,7 +410,7 @@ isnprintf(char *buf, size_t size, const char *fmt, ...)
 int
 iprintf(const char *fmt, ...)
 {
-	char buf[4096];
+	char buf[2048];
 	va_list ap;
 	int res;
 

@@ -32,7 +32,12 @@ uhci_init()
 
 	assert_or_panic(dev, "No UHCI dev!");
 	assert_or_panic(dev->st.header % 128 == 0x00, "Smth wrong with header!");
-	assert_or_panic(dev->st.prog_if == 0x00, "Not UHCI dev found!");
+
+	if (dev->st.prog_if != 0x00) {
+		dprintf("Not UHCI dev found!");
+		return;
+	}
+
 	assert_or_panic(dev->u._00.BAR4 % 2 == 1, "No IO in PCI CS!");
 
 	io_base = dev->u._00.BAR4 & ~0b11;
