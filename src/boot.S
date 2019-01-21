@@ -224,3 +224,18 @@ def_asm_handler:
 	popl	%fs
 	iret
 
+.global halt
+.type	halt	@function
+halt:
+	hlt
+	ret
+
+.global io_wait
+.type	io_wait	@function
+io_wait:
+	pushl	%eax
+	movb	$0,		%al
+	outb	%al,	$0x80
+	popl	%eax
+	ret
+

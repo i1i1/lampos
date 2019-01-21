@@ -26,7 +26,7 @@
 #define COLOR_WHITE		(COLOR_LIGHT_GREY | COLOR_BRIGHT)
 
 
-#define HISTORY_LINES	(2*height)
+#define HISTORY_LINES	200
 
 
 static unsigned int base_port;
@@ -44,7 +44,7 @@ int history_top_line;
 int history_screen_line;
 int history_reset_line;
 
-/* For optimization of vga_history_update */
+/* For optimization of vga.c:/^vga_history_update */
 int history_last_line;
 
 

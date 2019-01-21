@@ -5,13 +5,16 @@
 void
 swap(void *a, void *b, size_t size)
 {
-	char c;
+	char ch;
+	char *c, *d;
+
+	c = a;
+	d = b;
 
 	while (size--) {
-		c = *(char *)a;
-		*(char *)a++ = *(char *)b;
-		*(char *)b++ = c;
-
+		ch = *c;
+		*c++ = *d;
+		*d++ = ch;
 	}
 }
 

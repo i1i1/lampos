@@ -1,194 +1,293 @@
 #ifndef _KBD_SETS_H_
 #define _KBD_SETS_H_
 
+#include "stdint.h"
 #include "keyboard.h"
 
-struct {
-	char c;
-	kbd_code_type tp;
-} kbd_set[3][0x100] = {
-#define key(i, chr, type) [i] = {.c = chr, .tp = type},
-	[KBD_SET_1] = {
-		key(0x00, '\0', KBD_INVALID) // None
-		key(0x01, 'e', KBD_PRESSED_SPECIAL) // Escape
-		key(0x02, '1', KBD_PRESSED)
-		key(0x03, '2', KBD_PRESSED)
-		key(0x04, '3', KBD_PRESSED)
-		key(0x05, '4', KBD_PRESSED)
-		key(0x06, '5', KBD_PRESSED)
-		key(0x07, '6', KBD_PRESSED)
-		key(0x08, '7', KBD_PRESSED)
-		key(0x09, '8', KBD_PRESSED)
-		key(0x0A, '9', KBD_PRESSED)
-		key(0x0B, '0', KBD_PRESSED)
-		key(0x0C, '-', KBD_PRESSED)
-		key(0x0D, '=', KBD_PRESSED)
-		key(0x0E, '\b', KBD_PRESSED_SPECIAL) // Backspace
-		key(0x0F, '\t', KBD_PRESSED)
-		key(0x10, 'q', KBD_PRESSED)
-		key(0x11, 'w', KBD_PRESSED)
-		key(0x12, 'e', KBD_PRESSED)
-		key(0x13, 'r', KBD_PRESSED)
-		key(0x14, 't', KBD_PRESSED)
-		key(0x15, 'y', KBD_PRESSED)
-		key(0x16, 'u', KBD_PRESSED)
-		key(0x17, 'i', KBD_PRESSED)
-		key(0x18, 'o', KBD_PRESSED)
-		key(0x19, 'p', KBD_PRESSED)
-		key(0x1A, '[', KBD_PRESSED)
-		key(0x1B, ']', KBD_PRESSED)
-		key(0x1C, '\n', KBD_PRESSED_SPECIAL) // Enter
-		key(0x1D, 'c', KBD_PRESSED_SPECIAL) // Left Control
-		key(0x1E, 'a', KBD_PRESSED)
-		key(0x1F, 's', KBD_PRESSED)
-		key(0x20, 'd', KBD_PRESSED)
-		key(0x21, 'f', KBD_PRESSED)
-		key(0x22, 'g', KBD_PRESSED)
-		key(0x23, 'h', KBD_PRESSED)
-		key(0x24, 'j', KBD_PRESSED)
-		key(0x25, 'k', KBD_PRESSED)
-		key(0x26, 'l', KBD_PRESSED)
-		key(0x27, ';', KBD_PRESSED)
-		key(0x28, '\'', KBD_PRESSED)
-		key(0x29, '`', KBD_PRESSED)
-		key(0x2A, 's', KBD_PRESSED_SPECIAL) // Left Shift
-		key(0x2B, '\\', KBD_PRESSED)
-		key(0x2C, 'z', KBD_PRESSED)
-		key(0x2D, 'x', KBD_PRESSED)
-		key(0x2E, 'c', KBD_PRESSED)
-		key(0x2F, 'v', KBD_PRESSED)
-		key(0x30, 'b', KBD_PRESSED)
-		key(0x31, 'n', KBD_PRESSED)
-		key(0x32, 'm', KBD_PRESSED)
-		key(0x33, ',', KBD_PRESSED)
-		key(0x34, '.', KBD_PRESSED)
-		key(0x35, '/', KBD_PRESSED)
-		key(0x36, 's', KBD_PRESSED_SPECIAL) // Right Shift
-		key(0x37, '*', KBD_PRESSED)
-		key(0x38, 'a', KBD_PRESSED_SPECIAL) // Left Alt
-		key(0x39, ' ', KBD_PRESSED_SPECIAL) // Space
-		key(0x3A, 'C', KBD_PRESSED_SPECIAL) // Caps
-		key(0x3B, '1', KBD_PRESSED_SPECIAL) // F1
-		key(0x3C, '2', KBD_PRESSED_SPECIAL) // F2
-		key(0x3D, '3', KBD_PRESSED_SPECIAL) // F3
-		key(0x3E, '4', KBD_PRESSED_SPECIAL) // F4
-		key(0x3F, '5', KBD_PRESSED_SPECIAL) // F5
-		key(0x40, '6', KBD_PRESSED_SPECIAL) // F6
-		key(0x41, '7', KBD_PRESSED_SPECIAL) // F7
-		key(0x42, '8', KBD_PRESSED_SPECIAL) // F8
-		key(0x43, '9', KBD_PRESSED_SPECIAL) // F9
-		key(0x44, '0', KBD_PRESSED_SPECIAL) // F10
-		key(0x45, 'N', KBD_PRESSED_SPECIAL) // NUMLOCK
-		key(0x46, 'S', KBD_PRESSED_SPECIAL) // SCROLLLOCK
-		// Keypad
-		key(0x47, '7', KBD_PRESSED)
-		key(0x48, '8', KBD_PRESSED)
-		key(0x49, '9', KBD_PRESSED)
-		key(0x4A, '-', KBD_PRESSED)
-		key(0x4B, '4', KBD_PRESSED)
-		key(0x4C, '5', KBD_PRESSED)
-		key(0x4D, '6', KBD_PRESSED)
-		key(0x4E, '+', KBD_PRESSED)
-		key(0x4F, '1', KBD_PRESSED)
-		key(0x50, '2', KBD_PRESSED)
-		key(0x51, '3', KBD_PRESSED)
-		key(0x52, '0', KBD_PRESSED)
-		key(0x53, '.', KBD_PRESSED_SPECIAL) // DEL
-		// Should be invalid
-		// ...
-		key(0x57, '1', KBD_PRESSED_SPECIAL) // F11
-		key(0x58, '2', KBD_PRESSED_SPECIAL) // F12
-		key(0x81, 'e', KBD_RELEASED_SPECIAL) // Escape
-		key(0x82, '1', KBD_RELEASED)
-		key(0x83, '2', KBD_RELEASED)
-		key(0x84, '3', KBD_RELEASED)
-		key(0x85, '4', KBD_RELEASED)
-		key(0x86, '5', KBD_RELEASED)
-		key(0x87, '6', KBD_RELEASED)
-		key(0x88, '7', KBD_RELEASED)
-		key(0x89, '8', KBD_RELEASED)
-		key(0x8A, '9', KBD_RELEASED)
-		key(0x8B, '0', KBD_RELEASED)
-		key(0x8C, '-', KBD_RELEASED)
-		key(0x8D, '=', KBD_RELEASED)
-		key(0x8E, '\b', KBD_RELEASED_SPECIAL) // Backspace
-		key(0x8F, '\t', KBD_RELEASED)
-		key(0x90, 'q', KBD_RELEASED)
-		key(0x91, 'w', KBD_RELEASED)
-		key(0x92, 'e', KBD_RELEASED)
-		key(0x93, 'r', KBD_RELEASED)
-		key(0x94, 't', KBD_RELEASED)
-		key(0x95, 'y', KBD_RELEASED)
-		key(0x96, 'u', KBD_RELEASED)
-		key(0x97, 'i', KBD_RELEASED)
-		key(0x98, 'o', KBD_RELEASED)
-		key(0x99, 'p', KBD_RELEASED)
-		key(0x9A, '[', KBD_RELEASED)
-		key(0x9B, ']', KBD_RELEASED)
-		key(0x9C, '\n', KBD_RELEASED_SPECIAL) // Enter
-		key(0x9D, 'c', KBD_RELEASED_SPECIAL) // Left Control
-		key(0x9E, 'a', KBD_RELEASED)
-		key(0x9F, 's', KBD_RELEASED)
-		key(0xA0, 'd', KBD_RELEASED)
-		key(0xA1, 'f', KBD_RELEASED)
-		key(0xA2, 'g', KBD_RELEASED)
-		key(0xA3, 'h', KBD_RELEASED)
-		key(0xA4, 'j', KBD_RELEASED)
-		key(0xA5, 'k', KBD_RELEASED)
-		key(0xA6, 'l', KBD_RELEASED)
-		key(0xA7, ';', KBD_RELEASED)
-		key(0xA8, '\'', KBD_RELEASED)
-		key(0xA9, '`', KBD_RELEASED)
-		key(0xAA, 's', KBD_RELEASED_SPECIAL) // Left Shift
-		key(0xAB, '\\', KBD_RELEASED)
-		key(0xAC, 'z', KBD_RELEASED)
-		key(0xAD, 'x', KBD_RELEASED)
-		key(0xAE, 'c', KBD_RELEASED)
-		key(0xAF, 'v', KBD_RELEASED)
-		key(0xB0, 'b', KBD_RELEASED)
-		key(0xB1, 'n', KBD_RELEASED)
-		key(0xB2, 'm', KBD_RELEASED)
-		key(0xB3, ',', KBD_RELEASED)
-		key(0xB4, '.', KBD_RELEASED)
-		key(0xB5, '/', KBD_RELEASED)
-		key(0xB6, 's', KBD_RELEASED_SPECIAL) // Right Shift
-		key(0xB7, '*', KBD_RELEASED)
-		key(0xB8, 'a', KBD_RELEASED_SPECIAL) // Left Alt
-		key(0xB9, ' ', KBD_RELEASED_SPECIAL) // Space
-		key(0xBA, 'C', KBD_RELEASED_SPECIAL) // Caps
-		key(0xBB, '1', KBD_RELEASED_SPECIAL) // F1
-		key(0xBC, '2', KBD_RELEASED_SPECIAL) // F2
-		key(0xBD, '3', KBD_RELEASED_SPECIAL) // F3
-		key(0xBE, '4', KBD_RELEASED_SPECIAL) // F4
-		key(0xBF, '5', KBD_RELEASED_SPECIAL) // F5
-		key(0xC0, '6', KBD_RELEASED_SPECIAL) // F6
-		key(0xC1, '7', KBD_RELEASED_SPECIAL) // F7
-		key(0xC2, '8', KBD_RELEASED_SPECIAL) // F8
-		key(0xC3, '9', KBD_RELEASED_SPECIAL) // F9
-		key(0xC4, '0', KBD_RELEASED_SPECIAL) // F10
-		key(0xC5, 'N', KBD_RELEASED_SPECIAL) // NUMLOCK
-		key(0xC6, 'S', KBD_RELEASED_SPECIAL) // SCROLLLOCK
-		// Keypad
-		key(0xC7, '7', KBD_RELEASED)
-		key(0xC8, '8', KBD_RELEASED)
-		key(0xC9, '9', KBD_RELEASED)
-		key(0xCA, '-', KBD_RELEASED)
-		key(0xCB, '4', KBD_RELEASED)
-		key(0xCC, '5', KBD_RELEASED)
-		key(0xCD, '6', KBD_RELEASED)
-		key(0xCE, '+', KBD_RELEASED)
-		key(0xCF, '1', KBD_RELEASED)
-		key(0xD0, '2', KBD_RELEASED)
-		key(0xD1, '3', KBD_RELEASED)
-		key(0xD2, '0', KBD_RELEASED)
-		key(0xD3, '.', KBD_RELEASED_SPECIAL) // DEL
-		// Should be invalid
-		// ...
-		key(0xD7, '1', KBD_RELEASED_SPECIAL) // F11
-		key(0xD8, '2', KBD_RELEASED_SPECIAL) // F12
-	}
+#define KBD_BUF_MAX	8
+
+enum kbd_key_enum {
+	KBD_KEY_ESCAPE,
+	KBD_KEY_0,
+	KBD_KEY_1,
+	KBD_KEY_2,
+	KBD_KEY_3,
+	KBD_KEY_4,
+	KBD_KEY_5,
+	KBD_KEY_6,
+	KBD_KEY_7,
+	KBD_KEY_8,
+	KBD_KEY_9,
+	KBD_KEY_MINUS,
+	KBD_KEY_EQUAL,
+	KBD_KEY_BACKSPACE,
+	KBD_KEY_TAB,
+	KBD_KEY_Q,
+	KBD_KEY_W,
+	KBD_KEY_E,
+	KBD_KEY_R,
+	KBD_KEY_T,
+	KBD_KEY_Y,
+	KBD_KEY_U,
+	KBD_KEY_I,
+	KBD_KEY_O,
+	KBD_KEY_P,
+	KBD_KEY_OPEN_BRACKET,
+	KBD_KEY_CLOSE_BRACKET,
+	KBD_KEY_ENTER,
+	KBD_KEY_LEFT_CONTROL,
+	KBD_KEY_A,
+	KBD_KEY_S,
+	KBD_KEY_D,
+	KBD_KEY_F,
+	KBD_KEY_G,
+	KBD_KEY_H,
+	KBD_KEY_J,
+	KBD_KEY_K,
+	KBD_KEY_L,
+	KBD_KEY_SEMICOLON,
+	KBD_KEY_QUOTE,
+	KBD_KEY_BACKQUOTE,
+	KBD_KEY_LEFT_SHIFT,
+	KBD_KEY_BACKSLASH,
+	KBD_KEY_Z,
+	KBD_KEY_X,
+	KBD_KEY_C,
+	KBD_KEY_V,
+	KBD_KEY_B,
+	KBD_KEY_N,
+	KBD_KEY_M,
+	KBD_KEY_COMMA,
+	KBD_KEY_DOT,
+	KBD_KEY_SLASH,
+	KBD_KEY_RIGHT_SHIFT,
+	KBD_KEY_PAD_ASTERISK,
+	KBD_KEY_LEFT_ALT,
+	KBD_KEY_SPACE,
+	KBD_KEY_CAPSLOCK,
+	KBD_KEY_F1,
+	KBD_KEY_F2,
+	KBD_KEY_F3,
+	KBD_KEY_F4,
+	KBD_KEY_F5,
+	KBD_KEY_F6,
+	KBD_KEY_F7,
+	KBD_KEY_F8,
+	KBD_KEY_F9,
+	KBD_KEY_F10,
+	KBD_KEY_F11,
+	KBD_KEY_F12,
+	KBD_KEY_NUMLOCK,
+	KBD_KEY_SCROLLLOCK,
+	KBD_KEY_PAD_0,
+	KBD_KEY_PAD_1,
+	KBD_KEY_PAD_2,
+	KBD_KEY_PAD_3,
+	KBD_KEY_PAD_4,
+	KBD_KEY_PAD_5,
+	KBD_KEY_PAD_6,
+	KBD_KEY_PAD_7,
+	KBD_KEY_PAD_8,
+	KBD_KEY_PAD_9,
+	KBD_KEY_PAD_PLUS,
+	KBD_KEY_PAD_MINUS,
+	KBD_KEY_PAD_DELETE,
+	KBD_KEY_PAD_DOT,
+
 };
-#undef key
+
+enum kbd_act {
+	KEY_PRESSED,
+	KEY_RELEASED,
+};
+
+struct kbd_set_entry {
+	uint8_t arr[KBD_BUF_MAX];
+	enum kbd_key_enum val;
+	enum kbd_act act;
+};
+
+struct kbd_set_entry kbd_set[3][0x100] = {
+[KBD_SET_1] = {
+	{ { 0x01, 0 },         KBD_KEY_ESCAPE,        KEY_PRESSED  },
+	{ { 0x02, 0 },         KBD_KEY_1,             KEY_PRESSED  },
+	{ { 0x03, 0 },         KBD_KEY_2,             KEY_PRESSED  },
+	{ { 0x04, 0 },         KBD_KEY_3,             KEY_PRESSED  },
+	{ { 0x05, 0 },         KBD_KEY_4,             KEY_PRESSED  },
+	{ { 0x06, 0 },         KBD_KEY_5,             KEY_PRESSED  },
+	{ { 0x07, 0 },         KBD_KEY_6,             KEY_PRESSED  },
+	{ { 0x08, 0 },         KBD_KEY_7,             KEY_PRESSED  },
+	{ { 0x09, 0 },         KBD_KEY_8,             KEY_PRESSED  },
+	{ { 0x0a, 0 },         KBD_KEY_9,             KEY_PRESSED  },
+	{ { 0x0b, 0 },         KBD_KEY_0,             KEY_PRESSED  },
+	{ { 0x0c, 0 },         KBD_KEY_MINUS,         KEY_PRESSED  },
+	{ { 0x0d, 0 },         KBD_KEY_EQUAL,         KEY_PRESSED  },
+	{ { 0x0e, 0 },         KBD_KEY_BACKSPACE,     KEY_PRESSED  },
+	{ { 0x0f, 0 },         KBD_KEY_TAB,           KEY_PRESSED  },
+	{ { 0x10, 0 },         KBD_KEY_Q,             KEY_PRESSED  },
+	{ { 0x11, 0 },         KBD_KEY_W,             KEY_PRESSED  },
+	{ { 0x12, 0 },         KBD_KEY_E,             KEY_PRESSED  },
+	{ { 0x13, 0 },         KBD_KEY_R,             KEY_PRESSED  },
+	{ { 0x14, 0 },         KBD_KEY_T,             KEY_PRESSED  },
+	{ { 0x15, 0 },         KBD_KEY_Y,             KEY_PRESSED  },
+	{ { 0x16, 0 },         KBD_KEY_U,             KEY_PRESSED  },
+	{ { 0x17, 0 },         KBD_KEY_I,             KEY_PRESSED  },
+	{ { 0x18, 0 },         KBD_KEY_O,             KEY_PRESSED  },
+	{ { 0x19, 0 },         KBD_KEY_P,             KEY_PRESSED  },
+	{ { 0x1a, 0 },         KBD_KEY_OPEN_BRACKET,  KEY_PRESSED  },
+	{ { 0x1b, 0 },         KBD_KEY_CLOSE_BRACKET, KEY_PRESSED  },
+	{ { 0x1c, 0 },         KBD_KEY_ENTER,         KEY_PRESSED  },
+	{ { 0x1d, 0 },         KBD_KEY_LEFT_CONTROL,  KEY_PRESSED  },
+	{ { 0x1e, 0 },         KBD_KEY_A,             KEY_PRESSED  },
+	{ { 0x1f, 0 },         KBD_KEY_S,             KEY_PRESSED  },
+	{ { 0x20, 0 },         KBD_KEY_D,             KEY_PRESSED  },
+	{ { 0x21, 0 },         KBD_KEY_F,             KEY_PRESSED  },
+	{ { 0x22, 0 },         KBD_KEY_G,             KEY_PRESSED  },
+	{ { 0x23, 0 },         KBD_KEY_H,             KEY_PRESSED  },
+	{ { 0x24, 0 },         KBD_KEY_J,             KEY_PRESSED  },
+	{ { 0x25, 0 },         KBD_KEY_K,             KEY_PRESSED  },
+	{ { 0x26, 0 },         KBD_KEY_L,             KEY_PRESSED  },
+	{ { 0x27, 0 },         KBD_KEY_SEMICOLON,     KEY_PRESSED  },
+	{ { 0x28, 0 },         KBD_KEY_QUOTE,         KEY_PRESSED  },
+	{ { 0x29, 0 },         KBD_KEY_BACKQUOTE,     KEY_PRESSED  },
+	{ { 0x2a, 0 },         KBD_KEY_LEFT_SHIFT,    KEY_PRESSED  },
+	{ { 0x2b, 0 },         KBD_KEY_BACKSLASH,     KEY_PRESSED  },
+	{ { 0x2c, 0 },         KBD_KEY_Z,             KEY_PRESSED  },
+	{ { 0x2d, 0 },         KBD_KEY_X,             KEY_PRESSED  },
+	{ { 0x2e, 0 },         KBD_KEY_C,             KEY_PRESSED  },
+	{ { 0x2f, 0 },         KBD_KEY_V,             KEY_PRESSED  },
+	{ { 0x30, 0 },         KBD_KEY_B,             KEY_PRESSED  },
+	{ { 0x31, 0 },         KBD_KEY_N,             KEY_PRESSED  },
+	{ { 0x32, 0 },         KBD_KEY_M,             KEY_PRESSED  },
+	{ { 0x33, 0 },         KBD_KEY_COMMA,         KEY_PRESSED  },
+	{ { 0x34, 0 },         KBD_KEY_DOT,           KEY_PRESSED  },
+	{ { 0x35, 0 },         KBD_KEY_SLASH,         KEY_PRESSED  },
+	{ { 0x36, 0 },         KBD_KEY_RIGHT_SHIFT,   KEY_PRESSED  },
+	{ { 0x37, 0 },         KBD_KEY_PAD_ASTERISK,  KEY_PRESSED  },
+	{ { 0x38, 0 },         KBD_KEY_LEFT_ALT,      KEY_PRESSED  },
+	{ { 0x39, 0 },         KBD_KEY_SPACE,         KEY_PRESSED  },
+	{ { 0x3a, 0 },         KBD_KEY_CAPSLOCK,      KEY_PRESSED  },
+	{ { 0x3b, 0 },         KBD_KEY_F1,            KEY_PRESSED  },
+	{ { 0x3c, 0 },         KBD_KEY_F2,            KEY_PRESSED  },
+	{ { 0x3d, 0 },         KBD_KEY_F3,            KEY_PRESSED  },
+	{ { 0x3e, 0 },         KBD_KEY_F4,            KEY_PRESSED  },
+	{ { 0x3f, 0 },         KBD_KEY_F5,            KEY_PRESSED  },
+	{ { 0x40, 0 },         KBD_KEY_F6,            KEY_PRESSED  },
+	{ { 0x41, 0 },         KBD_KEY_F7,            KEY_PRESSED  },
+	{ { 0x42, 0 },         KBD_KEY_F8,            KEY_PRESSED  },
+	{ { 0x43, 0 },         KBD_KEY_F9,            KEY_PRESSED  },
+	{ { 0x44, 0 },         KBD_KEY_F10,           KEY_PRESSED  },
+	{ { 0x45, 0 },         KBD_KEY_NUMLOCK,       KEY_PRESSED  },
+	{ { 0x46, 0 },         KBD_KEY_SCROLLLOCK,    KEY_PRESSED  },
+	{ { 0x47, 0 },         KBD_KEY_PAD_7,         KEY_PRESSED  },
+	{ { 0x48, 0 },         KBD_KEY_PAD_8,         KEY_PRESSED  },
+	{ { 0x49, 0 },         KBD_KEY_PAD_9,         KEY_PRESSED  },
+	{ { 0x4a, 0 },         KBD_KEY_PAD_MINUS,     KEY_PRESSED  },
+	{ { 0x4b, 0 },         KBD_KEY_PAD_4,         KEY_PRESSED  },
+	{ { 0x4c, 0 },         KBD_KEY_PAD_5,         KEY_PRESSED  },
+	{ { 0x4d, 0 },         KBD_KEY_PAD_6,         KEY_PRESSED  },
+	{ { 0x4e, 0 },         KBD_KEY_PAD_PLUS,      KEY_PRESSED  },
+	{ { 0x4f, 0 },         KBD_KEY_PAD_1,         KEY_PRESSED  },
+	{ { 0x50, 0 },         KBD_KEY_PAD_2,         KEY_PRESSED  },
+	{ { 0x51, 0 },         KBD_KEY_PAD_3,         KEY_PRESSED  },
+	{ { 0x52, 0 },         KBD_KEY_PAD_0,         KEY_PRESSED  },
+	{ { 0x53, 0 },         KBD_KEY_PAD_DOT,       KEY_PRESSED  },
+
+	{ { 0x57, 0 },         KBD_KEY_F11,           KEY_PRESSED  },
+	{ { 0x58, 0 },         KBD_KEY_F12,           KEY_PRESSED  },
+
+	{ { 0x81, 0 },         KBD_KEY_ESCAPE,        KEY_RELEASED },
+	{ { 0x82, 0 },         KBD_KEY_1,             KEY_RELEASED },
+	{ { 0x83, 0 },         KBD_KEY_2,             KEY_RELEASED },
+	{ { 0x84, 0 },         KBD_KEY_3,             KEY_RELEASED },
+	{ { 0x85, 0 },         KBD_KEY_4,             KEY_RELEASED },
+	{ { 0x86, 0 },         KBD_KEY_5,             KEY_RELEASED },
+	{ { 0x87, 0 },         KBD_KEY_6,             KEY_RELEASED },
+	{ { 0x88, 0 },         KBD_KEY_7,             KEY_RELEASED },
+	{ { 0x89, 0 },         KBD_KEY_8,             KEY_RELEASED },
+	{ { 0x8a, 0 },         KBD_KEY_9,             KEY_RELEASED },
+	{ { 0x8b, 0 },         KBD_KEY_0,             KEY_RELEASED },
+	{ { 0x8c, 0 },         KBD_KEY_MINUS,         KEY_RELEASED },
+	{ { 0x8d, 0 },         KBD_KEY_EQUAL,         KEY_RELEASED },
+	{ { 0x8e, 0 },         KBD_KEY_BACKSPACE,     KEY_RELEASED },
+	{ { 0x8f, 0 },         KBD_KEY_TAB,           KEY_RELEASED },
+	{ { 0x90, 0 },         KBD_KEY_Q,             KEY_RELEASED },
+	{ { 0x91, 0 },         KBD_KEY_W,             KEY_RELEASED },
+	{ { 0x92, 0 },         KBD_KEY_E,             KEY_RELEASED },
+	{ { 0x93, 0 },         KBD_KEY_R,             KEY_RELEASED },
+	{ { 0x94, 0 },         KBD_KEY_T,             KEY_RELEASED },
+	{ { 0x95, 0 },         KBD_KEY_Y,             KEY_RELEASED },
+	{ { 0x96, 0 },         KBD_KEY_U,             KEY_RELEASED },
+	{ { 0x97, 0 },         KBD_KEY_I,             KEY_RELEASED },
+	{ { 0x98, 0 },         KBD_KEY_O,             KEY_RELEASED },
+	{ { 0x99, 0 },         KBD_KEY_P,             KEY_RELEASED },
+	{ { 0x9a, 0 },         KBD_KEY_OPEN_BRACKET,  KEY_RELEASED },
+	{ { 0x9b, 0 },         KBD_KEY_CLOSE_BRACKET, KEY_RELEASED },
+	{ { 0x9c, 0 },         KBD_KEY_ENTER,         KEY_RELEASED },
+	{ { 0x9d, 0 },         KBD_KEY_LEFT_CONTROL,  KEY_RELEASED },
+	{ { 0x9e, 0 },         KBD_KEY_A,             KEY_RELEASED },
+	{ { 0x9f, 0 },         KBD_KEY_S,             KEY_RELEASED },
+	{ { 0xa0, 0 },         KBD_KEY_D,             KEY_RELEASED },
+	{ { 0xa1, 0 },         KBD_KEY_F,             KEY_RELEASED },
+	{ { 0xa2, 0 },         KBD_KEY_G,             KEY_RELEASED },
+	{ { 0xa3, 0 },         KBD_KEY_H,             KEY_RELEASED },
+	{ { 0xa4, 0 },         KBD_KEY_J,             KEY_RELEASED },
+	{ { 0xa5, 0 },         KBD_KEY_K,             KEY_RELEASED },
+	{ { 0xa6, 0 },         KBD_KEY_L,             KEY_RELEASED },
+	{ { 0xa7, 0 },         KBD_KEY_SEMICOLON,     KEY_RELEASED },
+	{ { 0xa8, 0 },         KBD_KEY_QUOTE,         KEY_RELEASED },
+	{ { 0xa9, 0 },         KBD_KEY_BACKQUOTE,     KEY_RELEASED },
+	{ { 0xaa, 0 },         KBD_KEY_LEFT_SHIFT,    KEY_RELEASED },
+	{ { 0xab, 0 },         KBD_KEY_BACKSLASH,     KEY_RELEASED },
+	{ { 0xac, 0 },         KBD_KEY_Z,             KEY_RELEASED },
+	{ { 0xad, 0 },         KBD_KEY_X,             KEY_RELEASED },
+	{ { 0xae, 0 },         KBD_KEY_C,             KEY_RELEASED },
+	{ { 0xaf, 0 },         KBD_KEY_V,             KEY_RELEASED },
+	{ { 0xb0, 0 },         KBD_KEY_B,             KEY_RELEASED },
+	{ { 0xb1, 0 },         KBD_KEY_N,             KEY_RELEASED },
+	{ { 0xb2, 0 },         KBD_KEY_M,             KEY_RELEASED },
+	{ { 0xb3, 0 },         KBD_KEY_COMMA,         KEY_RELEASED },
+	{ { 0xb4, 0 },         KBD_KEY_DOT,           KEY_RELEASED },
+	{ { 0xb5, 0 },         KBD_KEY_SLASH,         KEY_RELEASED },
+	{ { 0xb6, 0 },         KBD_KEY_RIGHT_SHIFT,   KEY_RELEASED },
+	{ { 0xb7, 0 },         KBD_KEY_PAD_ASTERISK,  KEY_RELEASED },
+	{ { 0xb8, 0 },         KBD_KEY_LEFT_ALT,      KEY_RELEASED },
+	{ { 0xb9, 0 },         KBD_KEY_SPACE,         KEY_RELEASED },
+	{ { 0xba, 0 },         KBD_KEY_CAPSLOCK,      KEY_RELEASED },
+	{ { 0xbb, 0 },         KBD_KEY_F1,            KEY_RELEASED },
+	{ { 0xbc, 0 },         KBD_KEY_F2,            KEY_RELEASED },
+	{ { 0xbd, 0 },         KBD_KEY_F3,            KEY_RELEASED },
+	{ { 0xbe, 0 },         KBD_KEY_F4,            KEY_RELEASED },
+	{ { 0xbf, 0 },         KBD_KEY_F5,            KEY_RELEASED },
+	{ { 0xc0, 0 },         KBD_KEY_F6,            KEY_RELEASED },
+	{ { 0xc1, 0 },         KBD_KEY_F7,            KEY_RELEASED },
+	{ { 0xc2, 0 },         KBD_KEY_F8,            KEY_RELEASED },
+	{ { 0xc3, 0 },         KBD_KEY_F9,            KEY_RELEASED },
+	{ { 0xc4, 0 },         KBD_KEY_F10,           KEY_RELEASED },
+	{ { 0xc5, 0 },         KBD_KEY_NUMLOCK,       KEY_RELEASED },
+	{ { 0xc6, 0 },         KBD_KEY_SCROLLLOCK,    KEY_RELEASED },
+	{ { 0xc7, 0 },         KBD_KEY_PAD_7,         KEY_RELEASED },
+	{ { 0xc8, 0 },         KBD_KEY_PAD_8,         KEY_RELEASED },
+	{ { 0xc9, 0 },         KBD_KEY_PAD_9,         KEY_RELEASED },
+	{ { 0xca, 0 },         KBD_KEY_PAD_MINUS,     KEY_RELEASED },
+	{ { 0xcb, 0 },         KBD_KEY_PAD_4,         KEY_RELEASED },
+	{ { 0xcc, 0 },         KBD_KEY_PAD_5,         KEY_RELEASED },
+	{ { 0xcd, 0 },         KBD_KEY_PAD_6,         KEY_RELEASED },
+	{ { 0xce, 0 },         KBD_KEY_PAD_PLUS,      KEY_RELEASED },
+	{ { 0xcf, 0 },         KBD_KEY_PAD_1,         KEY_RELEASED },
+	{ { 0xd0, 0 },         KBD_KEY_PAD_2,         KEY_RELEASED },
+	{ { 0xd1, 0 },         KBD_KEY_PAD_3,         KEY_RELEASED },
+	{ { 0xd2, 0 },         KBD_KEY_PAD_0,         KEY_RELEASED },
+	{ { 0xd3, 0 },         KBD_KEY_PAD_DOT,       KEY_RELEASED },
+
+	{ { 0xd7, 0 },         KBD_KEY_F11,           KEY_RELEASED },
+	{ { 0xd8, 0 },         KBD_KEY_F12,           KEY_RELEASED },
+
+	/* Multimedia */
+//	{ { 0xe0, 0 },         KBD_KEY_F12,           KEY_RELEASED },
+//	{ { 0xe0, 0 },         KBD_KEY_F12,           KEY_RELEASED },
+}
+};
 
 
 #endif /* _KBD_SETS_H_ */

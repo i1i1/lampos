@@ -16,7 +16,7 @@ vaddr_t *pgdir = (vaddr_t *)PGDIR;
 const vaddr_t tempopage = { .ptr = (void *)PGTEMPO, };
 uint8_t pgref[1024 * 1024] = { 0 };
 
-inline void
+void
 pgreset()
 {
 	__asm__ __volatile__ ("mov %cr3, %eax; mov %eax, %cr3");

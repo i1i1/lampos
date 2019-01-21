@@ -3,7 +3,7 @@
 #include "com.h"
 
 
-inline int
+int
 com_port_valid(uint16_t port)
 {
 	return (port == COM1_PORT_ADDRESS) ||
@@ -12,13 +12,13 @@ com_port_valid(uint16_t port)
 			(port == COM4_PORT_ADDRESS);
 }
 
-inline int
+int
 com_trans_empty(uint16_t port)
 {
 	return !(inb(port + 5) & 0x20);
 }
 
-inline void
+void
 com_putc(uint16_t port, int c)
 {
 	if (!com_port_valid(port))
@@ -40,7 +40,7 @@ com_puts(uint16_t port, char *s)
 		com_putc(port, *s++);
 }
 
-inline int
+int
 com_fifo_empty(uint16_t port)
 {
 	return !(inb(port + 5) & 0x1);

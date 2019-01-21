@@ -23,7 +23,7 @@ struct idt {
 	struct idt_gate *intr;
 } __attribute__ ((packed));
 
-void int_add(int code, uint16_t segm, uint8_t type, int dpl, void *handler);
+void int_add(int code, uint16_t segm, uint8_t type, int dpl, void (*handler)());
 
 void int_init();
 

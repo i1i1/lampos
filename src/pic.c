@@ -14,11 +14,7 @@ static uint16_t pic_imr;
 
 static inline void pic_set_imr(enum pic_port p, uint8_t mask);
 
-static inline void io_wait(void)
-{
-	asm volatile ( "movb $0,  %%al" : : "a"(0) );
-	asm volatile ( "outb %%al, $0x80" : : "a"(0) );
-}
+extern void io_wait(void);
 
 void
 pic_imr_add(enum pic_imr_off off)

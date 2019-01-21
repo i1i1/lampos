@@ -12,8 +12,14 @@ mergeable(struct buddy_lst *a, struct buddy_lst *b, int power)
 	if (power == MAXBUDDY)
 		return 0;
 
-	if (a > b)
-		SWAP(a, b);
+	if (a > b) {
+		// Swapping
+		struct buddy_lst *c;
+
+		c = a;
+		a = b;
+		b = c;
+	}
 
 	a = (void *)((size_t)a >> power);
 	b = (void *)((size_t)b >> power);

@@ -105,7 +105,7 @@ pit_sleep(int ms)
 
 	while (tmp.sec > g_timer.sec ||
 	       (tmp.sec == g_timer.sec && tmp.ms > g_timer.ms)) {
-		asm("hlt");
+		halt();
 	}
 }
 

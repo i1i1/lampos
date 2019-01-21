@@ -17,18 +17,18 @@
 #define TRUE (!FALSE)
 #endif
 
-#define panic(args...)			do {					\
+#define panic(...)	do {								\
 						iprintf("\n\nKernel panic:\n\t");\
-						iprintf(args);			\
-						iprintf("\n");			\
-						for (;;)			\
-							asm("hlt");		\
+						iprintf(__VA_ARGS__);			\
+						iprintf("\n");					\
+						for (;;)						\
+							halt();						\
 					} while (0)
 
-#define assert_or_panic(cond, args...)	do {					\
-						if (!(cond))			\
-							panic(args);		\
-					} while (0)
+#define assert_or_panic(cond, ...)	do {							\
+											if (!(cond))			\
+												panic(__VA_ARGS__);	\
+										} while (0)
 
 #define NELEMS(x)	(sizeof(x)/sizeof(x[0]))
 
@@ -56,13 +56,14 @@ void *memset(void *s, int c, size_t n);
 /*
  * I/O port routines.
  */
-inline uint8_t inb(uint16_t port);
-inline uint16_t inw(uint16_t port);
-inline uint32_t inl(uint16_t port);
-inline void outb(uint16_t port, uint8_t val);
-inline void outw(uint16_t port, uint16_t val);
-inline void outl(uint16_t port, uint32_t val);
+uint8_t inb(uint16_t port);
+uint16_t inw(uint16_t port);
+uint32_t inl(uint16_t port);
+void outb(uint16_t port, uint8_t val);
+void outw(uint16_t port, uint16_t val);
+void outl(uint16_t port, uint32_t val);
 
+extern void halt();
 
 #endif /* _KERNEL_H_ */
 

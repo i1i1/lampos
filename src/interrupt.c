@@ -13,7 +13,7 @@ extern void int0_asm_handler();
 extern void int14_asm_handler();
 
 void
-int_add(int code, uint16_t segm, uint8_t type, int dpl, void *handler)
+int_add(int code, uint16_t segm, uint8_t type, int dpl, void (*handler)())
 {
 	intr[code].present = 1;
 	intr[code].res = 0;
@@ -34,7 +34,7 @@ zerodivision(size_t cr2)
 	for (;;);
 }
 
-extern void *def_asm_handler;
+extern void def_asm_handler();
 
 void
 def_irq()

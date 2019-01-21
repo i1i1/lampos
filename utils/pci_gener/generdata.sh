@@ -9,7 +9,7 @@ OUT=$ROOT/../../src/pci_db.c
 wget http://pci-ids.ucw.cz/v2.2/pci.ids -q -O "$IN"
 
 $ROOT/struct.awk < "$IN" > $ROOT/out
-N=$(wc -l $ROOT/out |cut -d' ' -f1)
+N=$(wc -l $ROOT/out | awk '{print $1}')
 
 echo '#include "defs.h"' > $OUT
 echo '#include "pci.h"' >> $OUT

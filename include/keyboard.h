@@ -17,14 +17,6 @@ typedef enum {
 } kbd_type;
 
 typedef enum {
-	KBD_PRESSED,
-	KBD_RELEASED,
-	KBD_PRESSED_SPECIAL,
-	KBD_RELEASED_SPECIAL,
-	KBD_INVALID,
-} kbd_code_type;
-
-typedef enum {
 	PS_2_DATA = 0x60,
 	PS_2_COMMAND = 0x64,
 	PS_2_STATUS = 0x64,

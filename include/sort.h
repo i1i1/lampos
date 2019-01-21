@@ -3,8 +3,10 @@
 
 #include "defs.h"
 
+typedef int cmp_t(const void *, const void *);
 
-void sort(void *base, size_t nmeb, size_t size,
-			int (*cmp)(const void *, const void *));
 
-#endif
+void sort(void *base, size_t nmeb, size_t size, cmp_t *cmp);
+
+#endif /* _SORT_H_ */
+

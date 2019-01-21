@@ -44,13 +44,6 @@
 						(n) = (n) & ~(1 << (off));	\
 					} while(0);
 
-	#define SWAP(a, b)		do {					\
-						typeof(a) c;			\
-						c = a;				\
-						a = b;				\
-						b = c;				\
-					} while(0)
-
 	#ifdef	DEBUG
 		#define	dprintf(...)	iprintf(__VA_ARGS__)
 	#else

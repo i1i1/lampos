@@ -40,7 +40,7 @@ uhci_init()
 
 	assert_or_panic(dev->u._00.BAR4 % 2 == 1, "No IO in PCI CS!");
 
-	io_base = dev->u._00.BAR4 & ~0b11;
+	io_base = dev->u._00.BAR4 & ~3;
 
 	tmp = pgmalloc();
 

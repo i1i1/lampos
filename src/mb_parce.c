@@ -63,7 +63,7 @@ area_parse(struct mb_mmap *mmap, size_t mmaplen,
 */
 	*buflen = j;
 
-	sort(buf, *buflen, sizeof(void *), (void *)area_cmp);
+	sort(buf, *buflen, sizeof(void *), (cmp_t *)area_cmp);
 
 	for (i = 0; i < *buflen; i++)
 		dprintf("\tbeg = 0x%016llx\tend = 0x%016llx\n", buf[i]->beg, buf[i]->end);
@@ -77,8 +77,14 @@ area_parse(struct mb_mmap *mmap, size_t mmaplen,
 			if (buf[i]->end > buf[prev]->end)
 				buf[prev]->end = buf[i]->end;
 
-			for (j = i; j < *buflen; j++)
-				SWAP(buf[j], buf[j + 1]);
+			for (j = i; j < *buflen; j++) {
+				// Swapping
+				struct mm_area *tmp;
+
+				tmp = buf[j];
+				buf[j] = buf[j + 1];
+				buf[j + 1] = tmp;
+			}
 
 		}
 		else prev++, i++;
@@ -152,11 +158,15 @@ mb_parse(struct mb_info *mb, struct mm_area ***mm, int *mmlen)
 	if (mb->flags & MB_MMAP_FLAG) {
 		unsigned int buflen = 16;
 		struct mm_area arr[buflen], *buf[buflen];
+		struct mb_mmap *mmap;
 
 		for (i = 0; i < buflen; i++)
 			buf[i] = arr + i;
 
-		area_parse(mb->mmap_addr + KERNEL_BASE, mb->mmap_length, buf, &buflen);
+		mmap = mb->mmap_addr;
+		mmap = (struct mb_mmap *)((char *)mmap + KERNEL_BASE);
+
+		area_parse(mmap, mb->mmap_length, buf, &buflen);
 
 		*mm = buf;
 		*mmlen = buflen;

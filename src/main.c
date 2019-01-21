@@ -54,7 +54,7 @@ main(size_t cr0, struct mb_info *mb)
 	ps_2_init();
 
 	pci_init();
-	uhci_init();
+//	uhci_init();
 
 	iprintf("\n\nLampOS v%u.%02u\n", VERSION_MAJOR, VERSION_MINOR);
 	iprintf("x86-32 version, uniprocessor kernel\n");
@@ -63,6 +63,6 @@ main(size_t cr0, struct mb_info *mb)
 	shell();
 
 	for (;;)
-		asm("hlt");
+		halt();
 }
 

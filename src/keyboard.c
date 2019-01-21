@@ -18,21 +18,71 @@ static volatile char key_buf[KEYBUFSZ];
 static volatile int beg = 0;
 static volatile int end = 0;
 
+static uint8_t key[KBD_BUF_MAX];
+static int key_idx;
+
 static kbd_type kbd_cur_set;
 
 static int shift = 0;
 static int cntrl = 0;
 
-kbd_code_type
-kbd_get_type_code(kbd_code c)
-{
-	return kbd_set[kbd_cur_set][c].tp;
-}
 
 char
-kbd_get_char_code(kbd_code c)
+kbd_get_char_code(enum kbd_key_enum c)
 {
-	return kbd_set[kbd_cur_set][c].c;
+	switch (c) {
+	case KBD_KEY_A:				return 'a';
+	case KBD_KEY_B:				return 'b';
+	case KBD_KEY_C:				return 'c';
+	case KBD_KEY_D:				return 'd';
+	case KBD_KEY_E:				return 'e';
+	case KBD_KEY_F:				return 'f';
+	case KBD_KEY_G:				return 'g';
+	case KBD_KEY_H:				return 'h';
+	case KBD_KEY_I:				return 'i';
+	case KBD_KEY_J:				return 'j';
+	case KBD_KEY_K:				return 'k';
+	case KBD_KEY_L:				return 'l';
+	case KBD_KEY_M:				return 'm';
+	case KBD_KEY_O:				return 'o';
+	case KBD_KEY_P:				return 'p';
+	case KBD_KEY_Q:				return 'q';
+	case KBD_KEY_R:				return 'r';
+	case KBD_KEY_S:				return 's';
+	case KBD_KEY_T:				return 't';
+	case KBD_KEY_U:				return 'u';
+	case KBD_KEY_V:				return 'v';
+	case KBD_KEY_W:				return 'w';
+	case KBD_KEY_X:				return 'x';
+	case KBD_KEY_Y:				return 'y';
+	case KBD_KEY_Z:				return 'z';
+	case KBD_KEY_0:				return '0';
+	case KBD_KEY_1:				return '1';
+	case KBD_KEY_2:				return '2';
+	case KBD_KEY_3:				return '3';
+	case KBD_KEY_4:				return '4';
+	case KBD_KEY_5:				return '5';
+	case KBD_KEY_6:				return '6';
+	case KBD_KEY_7:				return '7';
+	case KBD_KEY_8:				return '8';
+	case KBD_KEY_9:				return '9';
+	case KBD_KEY_MINUS:			return '-';
+	case KBD_KEY_EQUAL:			return '=';
+	case KBD_KEY_SLASH:			return '/';
+	case KBD_KEY_BACKSLASH:		return '\\';
+	case KBD_KEY_DOT:			return '.';
+	case KBD_KEY_COMMA:			return ',';
+	case KBD_KEY_ENTER:			return '\n';
+	case KBD_KEY_SPACE:			return ' ';
+	case KBD_KEY_TAB:			return '\t';
+	case KBD_KEY_BACKSPACE:		return '\b';
+	case KBD_KEY_OPEN_BRACKET:	return '[';
+	case KBD_KEY_CLOSE_BRACKET:	return ']';
+	case KBD_KEY_SEMICOLON:		return ';';
+	case KBD_KEY_QUOTE:			return '\'';
+
+	default:					return '\0';
+	}
 }
 
 char
@@ -96,77 +146,90 @@ buf_putc(char c)
 		beg = (beg + 1) % NELEMS(key_buf);
 }
 
+int
+kbd_set_lookup(struct kbd_set_entry **ret, uint8_t *key)
+{
+	struct kbd_set_entry *set;
+	int i, j;
+
+	set = kbd_set[kbd_cur_set];
+
+	for (i = 0; i < 0x100; i++) {
+		for (j = 0; j < KBD_BUF_MAX; j++) {
+			if (set[i].arr[j] == 0) {
+				*ret = set + i;
+				return 0;
+			}
+			if (set[i].arr[j] != key[j])
+				break;
+		}
+	}
+	return 1;
+}
+
 void
 kbd_irq()
 {
-	kbd_code c;
-	kbd_code_type tp;
+	struct kbd_set_entry *kbd_entry;
 	char chr;
-//	kbd_special_type stp;
 
-	c = inb(PS_2_DATA);
-	tp = kbd_get_type_code(c);
-	chr = kbd_get_char_code(c);
+	key[key_idx++] = inb(PS_2_DATA);
 
-	/* Should be adding character to the key_buf */
-	switch (tp) {
-	case KBD_PRESSED:
-		if (cntrl) {
-			switch (chr) {
-			case 'j':
+	if (kbd_set_lookup(&kbd_entry, key)) {
+		pic_eoi(PIC_MASTER_CMD);
+		return;
+	}
+
+	chr = kbd_get_char_code(kbd_entry->val);
+
+	if (kbd_entry->act == KEY_PRESSED) {
+		switch (kbd_entry->val) {
+		case KBD_KEY_LEFT_SHIFT:
+//		case KBD_KEY_RIGHT_SHIFT:
+			shift = 1;
+			break;
+		case KBD_KEY_LEFT_CONTROL:
+//		case KBD_KEY_RIGHT_CONTROL:
+			cntrl = 1;
+			break;
+		case KBD_KEY_J:
+			if (cntrl) {
 				vga_history_up();
 				break;
-			case 'k':
+			}
+		case KBD_KEY_K:
+			if (cntrl) {
 				vga_history_down();
 				break;
 			}
-			break;
-		}
+		default:
+			if (shift)
+				chr = upcase(chr);
 
-		if (shift)
-			chr = upcase(chr);
-
-		buf_putc(chr);
-		vga_putc(chr);
-		break;
-	case KBD_RELEASED:
-		//dprintf("Key '%c' released!\n", kbd_get_char_code(c));
-		break;
-	case KBD_PRESSED_SPECIAL:
-		switch (chr) {
-		case '\b':
-		case '\n':
-		case ' ':
 			buf_putc(chr);
 			vga_putc(chr);
 			break;
-		case 's':
-			shift = 1;
-			break;
-		case 'c':
-			cntrl = 1;
-			break;
-		default:
-			break;
 		}
-		break;
-	case KBD_RELEASED_SPECIAL:
-		switch (chr) {
-		case 's':
+	} else {
+		switch (kbd_entry->val) {
+		case KBD_KEY_LEFT_SHIFT:
+//		case KBD_KEY_RIGHT_SHIFT:
 			shift = 0;
 			break;
-		case 'c':
+		case KBD_KEY_LEFT_CONTROL:
+//		case KBD_KEY_RIGHT_CONTROL:
 			cntrl = 0;
 			break;
 		default:
+			//dprintf("Key '%c' released!\n", kbd_get_char_code(c));
 			break;
 		}
-	default:
-		break;
 	}
 
 	if (end == NELEMS(key_buf))
 		end = 0;
+	memset(key, 0, sizeof(key));
+	key_idx = 0;
 
 	pic_eoi(PIC_MASTER_CMD);
 }
@@ -265,7 +328,7 @@ ps_2_init()
 	ps_2_outb(0x20);
 	conf = ps_2_inb();
 	ps_2_outb(0x60);
-	outb(PS_2_DATA, conf & 0b10111100);
+	outb(PS_2_DATA, conf & 0xbc); // 0b10111100
 
 	/* Controller self test */
 	ps_2_outb(0xAA);
@@ -359,5 +422,8 @@ kbd_init()
 	ps_2_dev1_outb(0xF0);
 	ps_2_dev1_outb(kbd_cur_set);
 	ps_2_ack();
+
+	memset(key, 0, sizeof(key));
+	key_idx = 0;
 }
 
