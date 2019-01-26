@@ -113,7 +113,7 @@ getcmd(struct args *arg)
 		if (c == '\b' && i == 0)
 			continue;
 		/* Ignore tab for now */
-		if (c == '\t')
+		if (c == '\0' || c == '\t')
 			continue;
 		vga_putc(c);
 		if (c == '\b')
@@ -126,6 +126,7 @@ getcmd(struct args *arg)
 	buf[e] = '\0';
 	i = 0;
 	arg->c = 0;
+	arg->v[0][0] = '\0';
 
 	while (i < e && arg->c < NELEMS(arg->v)) {
 		int j;
