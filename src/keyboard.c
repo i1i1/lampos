@@ -9,7 +9,6 @@
 #include "kbd_sets.h"
 
 extern void kbd_asm_handler();
-extern void ps_2_asm_handler();
 
 typedef unsigned char kbd_code;
 
@@ -207,7 +206,6 @@ kbd_irq()
 				chr = upcase(chr);
 
 			buf_putc(chr);
-			vga_putc(chr);
 			break;
 		}
 	} else {

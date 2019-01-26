@@ -8,15 +8,21 @@
 #include "pgalloc.h"
 
 
-static int help(int argc, char **argv);
-static int testargs(int argc, char **argv);
-static int echo(int argc, char **argv);
-static int clear(int argc, char **argv);
+struct args {
+	int c;
+	char v[20][50];
+};
 
-#define fwrap(f, name)				\
+static int help(struct args *arg);
+static int testargs(struct args *arg);
+static int echo(struct args *arg);
+static int clear(struct args *arg);
+static int exit(struct args *arg);
+
+#define fwrap(f, name)		\
 	static int				\
-	name(int argc, char **argv)		\
-	{					\
+	name(struct args *arg)	\
+	{						\
 		f();				\
 		return 0;			\
 	}
@@ -29,7 +35,7 @@ fwrap(balloc_info, freea)
 
 static struct {
 	char *cmd;
-	int (*func)(int, char **);
+	int (*func)(struct args *);
 } cmds[] = {
 #define comm(c, f) { .cmd = c, .func = f },
 	comm("help", help)
@@ -39,11 +45,19 @@ static struct {
 	comm("freev", freev)
 	comm("freep", freep)
 	comm("freea", freea)
+	comm("exit", exit)
 };
 #undef comm
 
 static int
-help(int argc, char **argv)
+exit(struct args *arg)
+{
+	outb(0xf4, 0x00);
+	return 0;
+}
+
+static int
+help(struct args *arg)
 {
 	int i;
 
@@ -55,68 +69,75 @@ help(int argc, char **argv)
 }
 
 static int
-testargs(int argc, char **argv)
+testargs(struct args *arg)
 {
 	int i;
 
-	iprintf("cmd = \"%s\"\n", argv[0]);
+	iprintf("cmd = \"%s\"\n", arg->v[0]);
 
-	for (i = 1; i < argc; i++)
-		iprintf("\targv[%d] = \"%s\"\n", i, argv[i]);
+	for (i = 1; i < arg->c; i++)
+		iprintf("\targv[%d] = \"%s\"\n", i, arg->v[i]);
 
 	return 0;
 }
 
 static int
-echo(int argc, char **argv)
+echo(struct args *arg)
 {
 	int i;
 
-	for (i = 1; i < argc; i++)
-		iprintf("%s ", argv[i]);
+	for (i = 1; i < arg->c; i++)
+		iprintf("%s ", arg->v[i]);
 	iprintf("\n");
 
 	return 0;
 }
 
 static int
-clear(int argc, char **argv)
+clear(struct args *arg)
 {
 	iprintf("\f");
 
 	return 0;
 }
 
-/* Return 1 if got last arg of func */
-static int
-getarg(char *s, size_t slen)
+static void
+getcmd(struct args *arg)
 {
+	char buf[100];
+	int i, e;
 	char c;
-	int i;
 
 	i = 0;
-
-	do
-		c = getchar();
-	while (c == ' ' || c == '\t');
-
-	if (c == '\n') {
-		s[0] = '\0';
-		return 1;
+	while ((c = getchar()) != '\n' && i + 1 < NELEMS(buf)) {
+		if (c == '\b' && i == 0)
+			continue;
+		/* Ignore tab for now */
+		if (c == '\t')
+			continue;
+		vga_putc(c);
+		if (c == '\b')
+			i--;
+		else
+			buf[i++] = c;
 	}
 
-	do {
-		if (c == '\b')
-			i = i ? i - 1 : 0;
-		else
-			s[i++] = c;
-		c = getchar();
-	} while (c != ' ' && c != '\n' && c != '\t' && i < slen - 1);
+	e = i;
+	buf[e] = '\0';
+	i = 0;
+	arg->c = 0;
 
-	s[i] = '\0';
-	ungetchar(c);
+	while (i < e && arg->c < NELEMS(arg->v)) {
+		int j;
 
-	return 0;
+		while (buf[i] == ' ' && i < e)
+			i++;
+		j = 0;
+		while (buf[i] != ' ' && j + 1 < NELEMS(arg->v[0]) && i < e)
+			arg->v[arg->c][j++] = buf[i++];
+		arg->v[arg->c++][j] = '\0';
+	}
+	vga_putc('\n');
 }
 
 static int
@@ -131,13 +152,13 @@ is_cmd(char *cmd)
 }
 
 static void
-runcmd(int argc, char **argv)
+runcmd(struct args *arg)
 {
 	int i;
 
 	for (i = 0; i < NELEMS(cmds); i++) {
-		if (strcmp(argv[0], cmds[i].cmd) == 0) {
-			cmds[i].func(argc, argv);
+		if (strcmp(arg->v[0], cmds[i].cmd) == 0) {
+			cmds[i].func(arg);
 			return;
 		}
 	}
@@ -146,29 +167,20 @@ runcmd(int argc, char **argv)
 void
 shell()
 {
-	char argv[50][50];
-	char *args[50];
-	int argc, i;
+	struct args arg;
 
 	iprintf("\n");
 
 	for (;;) {
-		argc = 0;
 		iprintf(">> ");
+		getcmd(&arg);
 
-		while (getarg(argv[argc], sizeof(argv[0])) != 1
-		       && argc < NELEMS(argv))
-			argc++;
-
-		for (i = 0; i < argc; i++)
-			args[i] = argv[i];
-
-		if (is_cmd(argv[0]))
-			runcmd(argc, args);
-		else if (strcmp(argv[0], "") != 0) {
-			iprintf("Unknown cmd \"%s\"!\n", argv[0]);
+		if (is_cmd(arg.v[0]))
+			runcmd(&arg);
+		else if (strcmp(arg.v[0], "") != 0) {
+			iprintf("Unknown cmd \"%s\"!\n", arg.v[0]);
 			iprintf("Commands listed here:\n");
-			help(0, NULL);
+			help(&arg);
 		}
 	}
 }

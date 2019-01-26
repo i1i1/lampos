@@ -20,11 +20,11 @@ default: make boot.iso
 
 gdb: CFLAGS += -ggdb -DDEBUG
 gdb: boot.iso
-	qemu-system-i386 -cdrom boot.iso -m 128M -gdb tcp::1234 -S &
+	qemu-system-i386 -cdrom boot.iso -m 128M -gdb tcp::1234 -S -device isa-debug-exit,iobase=0xf4,iosize=0x04 &
 	gdb -s boot.bin
 
 test: boot.iso usb
-	qemu-system-i386 -cdrom boot.iso -m 128M -usb -usbdevice disk:format=raw:usb -serial file:com1
+	qemu-system-i386 -cdrom boot.iso -m 128M -usb -usbdevice disk:format=raw:usb -serial file:com1 -device isa-debug-exit,iobase=0xf4,iosize=0x04
 
 src/pci_db.c:
 	./utils/pci_gener/generdata.sh
