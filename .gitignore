@@ -1,0 +1,15 @@
+.list
+boot.bin
+boot.iso
+build/
+com1
+compile_commands.json
+generated.mk
+iso/
+src/pci_db.c
+usb
+utils/pci_gener/out
+utils/pci_gener/pci.ids
+TAGS
+tags
+
