@@ -6,12 +6,12 @@
 #include "physpgalloc.h"
 
 
-#define PG_PRESENT		1
-#define PG_RW			(1 << 1)
-#define PG_USER			(1 << 2)
-#define PG_ACCESS		(1 << 5)
-#define PG_DIRTY		(1 << 6)
-#define PG_ALLOCATED		(1 << 9)
+#define PG_PRESENT		BIT(0)
+#define PG_RW			BIT(1)
+#define PG_USER			BIT(2)
+#define PG_ACCESS		BIT(5)
+#define PG_DIRTY		BIT(6)
+#define PG_ALLOCATED		BIT(9)
 
 
 /* Various representations of virtual address */

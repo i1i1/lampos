@@ -10,6 +10,7 @@
 #include "keyboard.h"
 #include "pit.h"
 #include "pci.h"
+#include "pci_ide.h"
 #include "uhci.h"
 #include "shell.h"
 
@@ -54,6 +55,7 @@ main(size_t cr0, struct mb_info *mb)
 	ps_2_init();
 
 	pci_init();
+	pci_ide_init();
 //	uhci_init();
 
 	iprintf("\n\nLampOS v%u.%02u\n", VERSION_MAJOR, VERSION_MINOR);

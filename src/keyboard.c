@@ -129,7 +129,7 @@ buf_getc()
 		return '\0';
 
 	c = key_buf[beg];
-	beg = (beg + 1) % NELEMS(key_buf);
+	beg = (beg + 1) % ARRAY_SIZE(key_buf);
 
 	return c;
 }
@@ -138,11 +138,11 @@ void
 buf_putc(char c)
 {
 	key_buf[end] = c;
-	end = (end + 1) % NELEMS(key_buf);
+	end = (end + 1) % ARRAY_SIZE(key_buf);
 
-	/* If number of chars in buf == NELEMS(key_buf) */
+	/* If number of chars in buf == ARRAY_SIZE(key_buf) */
 	if (beg == end)
-		beg = (beg + 1) % NELEMS(key_buf);
+		beg = (beg + 1) % ARRAY_SIZE(key_buf);
 }
 
 int
@@ -224,7 +224,7 @@ kbd_irq()
 		}
 	}
 
-	if (end == NELEMS(key_buf))
+	if (end == ARRAY_SIZE(key_buf))
 		end = 0;
 	memset(key, 0, sizeof(key));
 	key_idx = 0;
@@ -250,14 +250,14 @@ ungetchar(char c)
 void
 ps_2_output_wait()
 {
-	while (!(inb(PS_2_STATUS) & (1 << 0)))
+	while (!(inb(PS_2_STATUS) & BIT(0)))
 		;
 }
 
 void
 ps_2_input_wait()
 {
-	while (inb(PS_2_STATUS) & (1 << 1))
+	while (inb(PS_2_STATUS) & BIT(1))
 		;
 }
 
@@ -282,7 +282,7 @@ ps_2_dev1_outb(uint8_t b)
 
 	st = pit_get_ticks();
 
-	while (inb(PS_2_STATUS) & (1 << 1)) {
+	while (inb(PS_2_STATUS) & BIT(1)) {
 		ct = pit_get_ticks();
 		/* Ur time is up! */
 		if (ct - st > 100)

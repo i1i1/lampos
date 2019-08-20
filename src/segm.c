@@ -1,42 +1,20 @@
 #include "kernel.h"
+#include "cpu.h"
 
 
 #define PRIVL_KERNEL	0x0
-#define PRIVL_USER	0x3
+#define PRIVL_USER	(BIT(1)|BIT(0))
 
-#define SEGM_READ	(1 << 0)
-#define SEGM_WRITE	(1 << 1)
-#define SEGM_EXEC	(1 << 2)
+#define SEGM_READ	BIT(0)
+#define SEGM_WRITE	BIT(1)
+#define SEGM_EXEC	BIT(2)
 
-#define GDT_EXEC_FLAG	(1 << 2)
-#define GDT_DC_FLAG	(1 << 3)
-#define GDT_RW_FLAG	(1 << 4)
-#define GDT_GRAN_PAGE	(1 << 5)
-#define GDT_MODE32	(1 << 6)
-#define GDT_PRESENT	(1 << 7)
-
-#define GDT_CODE	(GDT_PRESENT | GDT_EXEC_FLAG | GDT_DC_FLAG | GDT_RW_FLAG | GDT_MODE32)
-#define GDT_DATA	(GDT_PRESENT | GDT_RW_FLAG | GDT_MODE32)
-
-/*
- * Intel x86 Global Descriptor Table Descriptor.
- */
-struct gdtr {
-	uint16_t	size;
-	uint32_t	offset;
-} __attribute__ ((packed));
-
-/*
- * Intel x86 Global Descriptor Table entry.
- */
-struct gdt_entry {
-	uint32_t	limit_low : 16;
-	uint32_t	base_low : 24;
-	uint8_t		access_byte : 8;
-	uint32_t	limit_high : 4;
-	uint8_t		flags : 4;
-	uint32_t	base_high : 8;
-} __attribute__ ((packed));
+#define GDT_EXEC_FLAG	BIT(2)
+#define GDT_DC_FLAG	BIT(3)
+#define GDT_RW_FLAG	BIT(4)
+#define GDT_GRAN_PAGE	BIT(5)
+#define GDT_MODE32	BIT(6)
+#define GDT_PRESENT	BIT(7)
 
 struct tss_struct {
 	uint16_t	prev, res0;
@@ -68,15 +46,15 @@ struct tss_struct {
 } __attribute__ ((packed));
 
 
-#define GDT_PRIVL_MASK		0x3
+#define GDT_PRIVL_MASK		(BIT(1)|BIT(0))
 
-#define GDT_ACCESS_PRESENT	(1 << 7)
-#define GDT_ACCESS_EXEC		(1 << 3)
-#define GDT_ACCESS_DC		(1 << 2)
-#define GDT_ACCESS_RW		(1 << 1)
+#define GDT_ACCESS_PRESENT	BIT(7)
+#define GDT_ACCESS_EXEC		BIT(3)
+#define GDT_ACCESS_DC		BIT(2)
+#define GDT_ACCESS_RW		BIT(1)
 
-#define GDT_FLAG_INPAGES	(1 << 3)
-#define GDT_FLAG_MODE32		(1 << 2)
+#define GDT_FLAG_INPAGES	BIT(3)
+#define GDT_FLAG_MODE32		BIT(2)
 
 static struct gdtr gdt_ptr;
 static struct gdt_entry gdt_table[6];
@@ -96,7 +74,7 @@ gdt_entry_set(unsigned index,
 {
 	struct gdt_entry *gdtep;
 
-	if (index >= NELEMS(gdt_table))
+	if (index >= ARRAY_SIZE(gdt_table))
 		return -1;
 
 	gdtep = &gdt_table[index];
@@ -123,7 +101,7 @@ gdt_entry_set(unsigned index,
 	/* Set privilege level of the segment. */
 	gdtep->access_byte = (privl & GDT_PRIVL_MASK) << 5;
 	/* Turn on present bit to mark valid segment. */
-	gdtep->access_byte |= GDT_ACCESS_PRESENT | (1 << 4);
+	gdtep->access_byte |= GDT_ACCESS_PRESENT | BIT(4);
 
 	/*
 	 * Write access is never allowed for code segments. Data segments are

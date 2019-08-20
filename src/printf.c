@@ -9,7 +9,7 @@
 #define FMT_JUSTIFY_RIGHT	0
 #define FMT_JUSTIFY_LEFT	1
 
-#define LMOD_SIGNED		(1 << 4)
+#define LMOD_SIGNED		BIT(4)
 #define LMOD_INT		0
 #define LMOD_CHAR		1
 #define LMOD_SHORT		2

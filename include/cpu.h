@@ -4,15 +4,15 @@
 #include "defs.h"
 
 #define GDT_PRIVL0	0x0
-#define GDT_PRIVL1	0x1
-#define GDT_PRIVL2	0x2
-#define GDT_PRIVL3	0x3
-#define GDT_EXEC_FLAG	(1 << 2)
-#define GDT_DC_FLAG	(1 << 3)
-#define GDT_RW_FLAG	(1 << 4)
-#define GDT_GRAN_PAGE	(1 << 5)
-#define GDT_MODE32	(1 << 6)
-#define GDT_PRESENT	(1 << 7)
+#define GDT_PRIVL1	BIT(0)
+#define GDT_PRIVL2	BIT(1)
+#define GDT_PRIVL3	(GDT_PRIVL1|GDT_PRIVL2)
+#define GDT_EXEC_FLAG	BIT(2)
+#define GDT_DC_FLAG	BIT(3)
+#define GDT_RW_FLAG	BIT(4)
+#define GDT_GRAN_PAGE	BIT(5)
+#define GDT_MODE32	BIT(6)
+#define GDT_PRESENT	BIT(7)
 
 #define GDT_USER	(GDT_PRESENT | GDT_PRIVL3 | GDT_MODE32)
 #define GDT_KERNEL	(GDT_PRESENT | GDT_PRIVL0 | GDT_MODE32)

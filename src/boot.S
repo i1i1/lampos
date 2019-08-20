@@ -1,7 +1,8 @@
 #include "defs.h"
+#include "kernel.h"
 
-#define PAGE_ALGIN	1<<0
-#define MEMORY_INFO	1<<1
+#define PAGE_ALGIN	BIT(0)
+#define MEMORY_INFO	BIT(1)
 #define HEADER_MAGIC	0x1BADB002
 #define HEADER_FLAGS	(PAGE_ALGIN | MEMORY_INFO)
 #define CHECKSUM	-(HEADER_MAGIC+HEADER_FLAGS)

@@ -28,11 +28,14 @@ gdb: $(ISO)
 	qemu-system-i386 -cdrom $(ISO) -m 128M -gdb tcp::1234 -S -device isa-debug-exit,iobase=0xf4,iosize=0x04 &
 	gdb -s $(OUT)
 
-test: $(ISO) usb
-	qemu-system-i386 -cdrom $(ISO) -m 128M -serial file:com1 -device isa-debug-exit,iobase=0xf4,iosize=0x04
+test: $(ISO) disk
+	qemu-system-i386 -cdrom $(ISO) -m 128M -serial file:com1 -device isa-debug-exit,iobase=0xf4,iosize=0x04 -hda disk
 
 src/pci_db.c:
 	./utils/pci_gener/generdata.sh
+
+disk:
+	qemu-img create disk 4G
 
 $(ISO): $(OUT)
 	mkdir -p iso/boot/grub
@@ -44,9 +47,6 @@ $(ISO): $(OUT)
 	echo "kernel /boot/$(OUT)" >> iso/boot/grub/menu.lst
 	$(GENISOIMAGE) -R -b boot/grub/stage2_eltorito -no-emul-boot\
 		-boot-load-size 4 -boot-info-table -quiet -o $(ISO) iso/
-
-usb:
-	dd if=/dev/zero of=$@ bs=1024 count=64000
 
 userclean:
 	rm -rf iso/

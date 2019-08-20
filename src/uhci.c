@@ -31,14 +31,14 @@ uhci_init()
 	dev = pci_get_dev(0xC, 0x3);
 
 	assert_or_panic(dev, "No UHCI dev!");
-	assert_or_panic(dev->st.header % 128 == 0x00, "Smth wrong with header!");
+	assert_or_panic((dev->st.header & MASK(6)) == 0x00, "Smth wrong with header!");
 
 	if (dev->st.prog_if != 0x00) {
 		dprintf("Not UHCI dev found!");
 		return;
 	}
 
-	assert_or_panic(dev->u._00.BAR4 % 2 == 1, "No IO in PCI CS!");
+	assert_or_panic((dev->u._00.BAR4 & MASK(1)) == 1, "No IO in PCI CS!");
 
 	io_base = dev->u._00.BAR4 & ~3;
 

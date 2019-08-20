@@ -20,17 +20,19 @@ pci_inl(struct pci_dev_lst *d, uint8_t off)
 	union pci_addr {
 		struct {
 			uint8_t zero	: 2;
-			uint8_t off	: 6;
+			uint8_t off		: 6;
 			uint8_t func	: 3;
 			uint8_t slot	: 5;
-			uint8_t bus	: 8;
-			uint8_t res	: 7;
-			uint8_t fl	: 1;
+			uint8_t bus		: 8;
+			uint8_t res		: 7;
+			uint8_t fl		: 1;
 		} __attribute__((packed)) a;
 		uint32_t n;
 	};
 
 	union pci_addr addr;
+
+    assert_or_panic((off % 4 == 0), "off should be alligned by 4");
 
 	addr.a.fl = 1;
 	addr.a.res = addr.a.zero = 0;
@@ -78,7 +80,7 @@ pci_unget_dev(struct pci_dev_lst *dp)
 static const struct pci_ext_db *
 pci_ext_db_lookup(struct pci_dev_lst *d)
 {
-	int i, h = d->st.header % 128;
+	int i, h = d->st.header & MASK(7);
 	struct pci_ext_db *cs;
 
 	for (i = 0, cs = pci_db; i < pci_db_n; i++, cs++) {
@@ -181,7 +183,7 @@ pci_print_info()
 	const struct pci_ext_db *info;
 
 	for (np = head; np != NULL; np = np->next) {
-		dprintf("\tpci_bus %d, pci_dev %d, func %d\n"
+		iprintf("\tpci_bus %d, pci_dev %d, func %d\n"
 			"\theader %02xh, class %xh, subclass %xh, prog_if %xh\n",
 			np->bus, np->dev, np->func, np->st.header % 128,
 			np->st.class, np->st.subclass, np->st.prog_if);
@@ -191,24 +193,23 @@ pci_print_info()
 		 */
 		info = pci_ext_db_lookup(np);
 		if (!info) {
-			dprintf("\tWOW! Unknown device %04x from vendor %04x!\n",
+			iprintf("\tWOW! Unknown device %04x from vendor %04x!\n",
 				np->st.dev, np->st.vendor);
 		}
 		else {
-			dprintf("\tvendor %s, device %s\n",
+			iprintf("\tvendor %s, device %s\n",
 				info->vendor_name, info->dev_name ? info->dev_name : "(null)");
 			if (info->subsys_name)
-				dprintf("\tsub_sys %s\n", info->subsys_name);
+				iprintf("\tsub_sys %s\n", info->subsys_name);
 		}
-		dprintf("\n");
+		iprintf("\n");
 	}
-	dprintf("TOTAL: %d devices\n", dev_cnt);
+	iprintf("TOTAL: %d devices\n", dev_cnt);
 }
 
 void
 pci_init(void)
 {
 	pci_dev_scan();
-	pci_print_info();
 }
 

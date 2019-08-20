@@ -21,7 +21,7 @@ int_add(int code, uint16_t segm, uint8_t type, int dpl, void (*handler)())
 	intr[code].segm = sizeof(struct gdt_entry) * segm;
 	intr[code].type = type;
 	intr[code].dpl = dpl;
-	intr[code].offset_low = (size_t)handler % (1 << 16);
+	intr[code].offset_low = (size_t)handler & MASK(16);
 	intr[code].offset_high = (size_t)handler >> 16;
 }
 

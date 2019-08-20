@@ -174,5 +174,6 @@ struct pci_dev_lst *pci_get_dev(uint8_t class, uint8_t subclass);
 void pci_unget_dev(struct pci_dev_lst *dp);
 uint32_t pci_inl(struct pci_dev_lst *d, uint8_t off);
 void pci_init(void);
+void pci_print_info();
 
 #endif /* _PCI_H_ */

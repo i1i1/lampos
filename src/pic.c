@@ -19,7 +19,7 @@ extern void io_wait(void);
 void
 pic_imr_add(enum pic_imr_off off)
 {
-	pic_imr |= (1 << off);
+	pic_imr |= BIT(off);
 
 	if (off < 8)
 		pic_set_imr(PIC_MASTER_DT, (uint8_t)pic_imr);

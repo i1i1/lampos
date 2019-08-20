@@ -6,18 +6,18 @@
 #include "mb_parce.h"
 
 
-#define MB_MEM_FLAG	(1 << 0)
-#define MB_BD_FLAG	(1 << 1)
-#define MB_CMD_FLAG	(1 << 2)
-#define MB_MODS_FLAG	(1 << 3)
-#define MB_SYM_1_FLAG	(1 << 4)
-#define MB_SYM_2_FLAG	(1 << 5)
-#define MB_MMAP_FLAG	(1 << 6)
-#define MB_DRIVES_FLAG	(1 << 7)
-#define MB_CT_FLAG	(1 << 8)
-#define MB_BOOT_FLAG	(1 << 9)
-#define MB_APM_FLAG	(1 << 10)
-#define MB_VBE_FLAG	(1 << 11)
+#define MB_MEM_FLAG	BIT(0)
+#define MB_BD_FLAG	BIT(1)
+#define MB_CMD_FLAG	BIT(2)
+#define MB_MODS_FLAG	BIT(3)
+#define MB_SYM_1_FLAG	BIT(4)
+#define MB_SYM_2_FLAG	BIT(5)
+#define MB_MMAP_FLAG	BIT(6)
+#define MB_DRIVES_FLAG	BIT(7)
+#define MB_CT_FLAG	BIT(8)
+#define MB_BOOT_FLAG	BIT(9)
+#define MB_APM_FLAG	BIT(10)
+#define MB_VBE_FLAG	BIT(11)
 
 
 int

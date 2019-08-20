@@ -7,7 +7,7 @@ compile_commands.json
 generated.mk
 iso/
 src/pci_db.c
-usb
+disk
 utils/pci_gener/out
 utils/pci_gener/pci.ids
 TAGS

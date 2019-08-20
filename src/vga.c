@@ -161,7 +161,7 @@ vga_init()
 	vga_clear_screen();
 
 	/* Set TAB stops after each 8 characters. */
-	for (i = 0; i < NELEMS(tabs); i++)
+	for (i = 0; i < ARRAY_SIZE(tabs); i++)
 		tabs[i] = 0x01010101;
 
 	/* Move hardware cursor to upper left corner. */

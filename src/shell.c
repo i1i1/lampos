@@ -2,6 +2,7 @@
 #include "kernel.h"
 #include "vga.h"
 
+#include "pci.h"
 #include "keyboard.h"
 #include "buddyalloc.h"
 #include "physpgalloc.h"
@@ -17,6 +18,7 @@ static int help(struct args *arg);
 static int testargs(struct args *arg);
 static int echo(struct args *arg);
 static int clear(struct args *arg);
+static int pci(struct args *arg);
 static int exit(struct args *arg);
 
 #define fwrap(f, name)		\
@@ -27,6 +29,7 @@ static int exit(struct args *arg);
 		return 0;			\
 	}
 
+fwrap(pci_print_info, pci)
 fwrap(pginfo, freev)
 fwrap(physpginfo, freep)
 fwrap(balloc_info, freea)
@@ -45,6 +48,7 @@ static struct {
 	comm("freev", freev)
 	comm("freep", freep)
 	comm("freea", freea)
+	comm("pci", pci)
 	comm("exit", exit)
 };
 #undef comm
@@ -61,7 +65,7 @@ help(struct args *arg)
 {
 	int i;
 
-	for (i = 0; i < NELEMS(cmds); i++)
+	for (i = 0; i < ARRAY_SIZE(cmds); i++)
 		iprintf("%s\t", cmds[i].cmd);
 	iprintf("\n");
 
@@ -109,7 +113,7 @@ getcmd(struct args *arg)
 	char c;
 
 	i = 0;
-	while ((c = getchar()) != '\n' && i + 1 < NELEMS(buf)) {
+	while ((c = getchar()) != '\n' && i + 1 < ARRAY_SIZE(buf)) {
 		if (c == '\b' && i == 0)
 			continue;
 		/* Ignore tab for now */
@@ -128,13 +132,13 @@ getcmd(struct args *arg)
 	arg->c = 0;
 	arg->v[0][0] = '\0';
 
-	while (i < e && arg->c < NELEMS(arg->v)) {
+	while (i < e && arg->c < ARRAY_SIZE(arg->v)) {
 		int j;
 
 		while (buf[i] == ' ' && i < e)
 			i++;
 		j = 0;
-		while (buf[i] != ' ' && j + 1 < NELEMS(arg->v[0]) && i < e)
+		while (buf[i] != ' ' && j + 1 < ARRAY_SIZE(arg->v[0]) && i < e)
 			arg->v[arg->c][j++] = buf[i++];
 		arg->v[arg->c++][j] = '\0';
 	}
@@ -146,7 +150,7 @@ is_cmd(char *cmd)
 {
 	int i;
 
-	for (i = 0; i < NELEMS(cmds); i++)
+	for (i = 0; i < ARRAY_SIZE(cmds); i++)
 		if (strcmp(cmd, cmds[i].cmd) == 0)
 			return 1;
 	return 0;
@@ -157,7 +161,7 @@ runcmd(struct args *arg)
 {
 	int i;
 
-	for (i = 0; i < NELEMS(cmds); i++) {
+	for (i = 0; i < ARRAY_SIZE(cmds); i++) {
 		if (strcmp(arg->v[0], cmds[i].cmd) == 0) {
 			cmds[i].func(arg);
 			return;

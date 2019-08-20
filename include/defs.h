@@ -31,17 +31,18 @@
 #ifndef __ASSEMBLER__
 	#include <stdint.h>
 	typedef uint32_t size_t;
+	typedef uint32_t bool_t;
 	#ifndef	NULL
 		#define	NULL		(void *)0
 	#endif
 
 	#define GET_BIT(n, off)		(((n) >> (off)) & 1)
 	#define SET_BIT(n, off)		do {					\
-						(n) = (n) |  (1 << (off));	\
+						(n) = (n) |  BIT(off);	\
 					} while(0);
 
 	#define CLR_BIT(n, off)		do {					\
-						(n) = (n) & ~(1 << (off));	\
+						(n) = (n) & ~BIT(off);	\
 					} while(0);
 
 	#ifdef	DEBUG
