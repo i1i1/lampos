@@ -75,12 +75,82 @@ void *memset(void *s, int c, size_t n);
 /*
  * I/O port routines.
  */
-uint8_t inb(uint16_t port);
-uint16_t inw(uint16_t port);
-uint32_t inl(uint16_t port);
-void outb(uint16_t port, uint8_t val);
-void outw(uint16_t port, uint16_t val);
-void outl(uint16_t port, uint32_t val);
+
+/* This helper reads a byte from I/O port. */
+static inline uint8_t
+inb(uint16_t port)
+{
+	uint8_t c;
+
+	__asm__ __volatile__ ("inb %%dx,%%al" : "=a"(c) : "d"(port));
+
+	return c;
+}
+
+/* This helper reads a (2-byte) word from I/O port. */
+static inline uint16_t
+inw(uint16_t port)
+{
+	uint16_t c;
+
+	__asm__ __volatile__ ("inw %%dx,%%ax" : "=a"(c) : "d"(port));
+
+	return c;
+}
+/* This helper reads a (4-byte) long word from I/O port. */
+static inline uint32_t
+inl(uint16_t port)
+{
+	uint32_t c;
+
+	__asm__ __volatile__ ("inl %%dx,%%eax" : "=a"(c) : "d"(port));
+
+	return c;
+}
+
+
+/* This helper writes a byte to I/O port. */
+static inline void
+outb(uint16_t port, uint8_t val)
+{
+	__asm__ __volatile__ ("outb %b0,%w1;" :: "a"(val), "d"(port));
+}
+
+/* This helper writes a (2-byte) word to I/O port. */
+static inline void
+outw(uint16_t port, uint16_t val)
+{
+	__asm__ __volatile__ ("outw %%ax,%%dx" :: "d"(port), "a"(val));
+}
+
+/* This helper writes a (4-byte) long word to I/O port. */
+static inline void
+outl(uint16_t port, uint32_t val)
+{
+	__asm__ __volatile__ ("outl %%eax,%%dx" :: "d"(port), "a"(val));
+}
+
+/* This helper reads a string of (4-byte) long words of number cnt from I/O port. */
+static inline void
+insl(uint32_t port, void *addr, int cnt) {
+    asm volatile (
+            "cld;"
+            "repne; insl;"
+            : "=D" (addr), "=c" (cnt)
+            : "d" (port), "0" (addr), "1" (cnt)
+            : "memory", "cc");
+}
+
+/* This helper writes a string of (4-byte) long words of number cnt to I/O port. */
+static inline void
+outsl(uint32_t port, const void *addr, int cnt) {
+    asm volatile (
+        "cld;"
+        "repne; outsl;"
+        : "=S" (addr), "=c" (cnt)
+        : "d" (port), "0" (addr), "1" (cnt)
+        : "memory", "cc");
+}
 
 extern void halt();
 

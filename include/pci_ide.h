@@ -14,6 +14,9 @@ struct pci_ide {
 };
 
 struct ata {
+    uint16_t port;
+    uint16_t ctl_port;
+
     bool_t lba48;
     uint32_t lbasectors; /* number of 28 bit lba sectors */
     uint64_t sectors;    /* number of 48 bit sectors */

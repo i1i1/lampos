@@ -23,12 +23,95 @@ enum {
     ATA_CTRL_DRIVE_ADDR  = 1,
 };
 
+enum {
+    ATA_STATUS_ERR_BIT = 0,
+    ATA_STATUS_DRQ_BIT = 3,
+    ATA_STATUS_BSY_BIT = 7,
+};
+
 
 
 static struct pci_dev_lst *pci_dev = NULL;
 static struct pci_ide ide;
 static struct ata ata;
 
+
+static void
+ata_wait_ready(struct ata *ata)
+{
+    while (inb(ata->port+ATA_STATUS) & BIT(ATA_STATUS_BSY_BIT))
+        /* nothing */;
+}
+
+
+static void
+ata_set_addr_lba48(struct ata *ata, uint64_t lba)
+{
+    uint8_t lbas[] = {
+        lba >>  0,
+        lba >>  8,
+        lba >> 16,
+        lba >> 24,
+        lba >> 32,
+        lba >> 40,
+    };
+
+    outb(ata->port+ATA_SECT_CNT, 0);
+    outb(ata->port+ATA_LBA_LOW,  lbas[3]);
+    outb(ata->port+ATA_LBA_MID,  lbas[4]);
+    outb(ata->port+ATA_LBA_HIGH, lbas[5]);
+    outb(ata->port+ATA_SECT_CNT, 0);
+    outb(ata->port+ATA_LBA_LOW,  lbas[0]);
+    outb(ata->port+ATA_LBA_MID,  lbas[1]);
+    outb(ata->port+ATA_LBA_HIGH, lbas[2]);
+}
+
+void
+ata_write(struct ata *ata, uint64_t addr, uint8_t *buf, int buflen)
+{
+    uint16_t *b = (void *)buf;
+
+    ata_wait_ready(ata);
+
+    outb(ata->port+ATA_DRIVE_HEAD, 0x40);
+
+    ata_set_addr_lba48(ata, addr/512);
+
+    /* WRITE SECTORS EXT */
+    outb(ata->port+ATA_CMD, 0x34);
+
+    ata_wait_ready(ata);
+
+    outsl(ata->port+ATA_DATA, b, sizeof(b)/sizeof(uint32_t));
+}
+
+/*
+ * Tryes to read bytes enough to fill the buffer.
+ */
+int
+ata_read(struct ata *ata, uint64_t addr, uint8_t *buf, int buflen)
+{
+    uint16_t *b = (void *)buf;
+
+    ata_wait_ready(ata);
+
+    outb(ata->port+ATA_DRIVE_HEAD, 0x40);
+
+    ata_wait_ready(ata);
+
+    ata_set_addr_lba48(ata, addr/512);
+
+    ata_wait_ready(ata);
+
+    /* READ SECTORS EXT */
+    outb(ata->port+ATA_CMD, 0x24);
+
+    ata_wait_ready(ata);
+
+    insl(ata->port+ATA_DATA, b, sizeof(b)/sizeof(uint32_t));
+
+    return 0;
+}
 
 /*
  * Returns 1 if drive is accessable.
@@ -56,7 +139,7 @@ ata_identify_primary(struct ata *ata, struct pci_ide *ide)
         status = inb(ide->primary_port+ATA_STATUS);
         if (status == 0) /* drive doesn't exist */
             return 0;
-    } while (status & BIT(7)); /* Busy bit */
+    } while (status & BIT(ATA_STATUS_BSY_BIT));
 
     lbamid  = inb(ide->primary_port+ATA_LBA_MID);
     lbahigh = inb(ide->primary_port+ATA_LBA_HIGH);
@@ -68,14 +151,16 @@ ata_identify_primary(struct ata *ata, struct pci_ide *ide)
     do {
         status = inb(ide->primary_port+ATA_STATUS);
         /* if error occured */
-        if (status & BIT(0))
+        if (status & BIT(ATA_STATUS_ERR_BIT))
             return 0;
-    } while (!(status & BIT(3))); /* DRQ bit, should be set when it is ready */
+    } while (!(status & BIT(ATA_STATUS_DRQ_BIT))); /* should be set when it is ready */
 
     for (i = 0; i < ARRAY_SIZE(ident); i++)
         ident[i] = inw(ide->primary_port+ATA_DATA);
 
     *ata = (struct ata) {
+        .port       = ide->primary_port,
+        .ctl_port   = ide->primary_ctl_port,
         .lba48      = (ident[83]) ? TRUE : FALSE,
         .lbasectors = *((uint32_t *)&ident[60]),
         .sectors    = *((uint64_t *)&ident[100]),
@@ -98,6 +183,38 @@ ata_init(struct ata *ata, struct pci_ide *ide)
         iprintf("No ata device\n");
     else
         iprintf("Ata device is set!\n");
+}
+
+void
+cmd_ata_write(uint64_t addr)
+{
+    uint16_t buf[256];
+    int i;
+
+    for (i = 0; i < 256; i++)
+        buf[i] = i;
+
+    buf[0] = 0xffff;
+
+    ata_write(&ata, addr, (void *)buf, sizeof(buf));
+}
+
+void
+cmd_ata_read(uint64_t addr)
+{
+    uint16_t buf[256];
+    int i, j;
+
+    ata_read(&ata, addr, (void *)buf, sizeof(buf));
+
+    iprintf("\nContent of first sector:\n");
+
+    for (i = 0; i < 32; i++) {
+        iprintf("\t");
+        for (j = 0; j < 8; j++)
+            iprintf("%04x ", buf[i*8+j]);
+        iprintf("\n");
+    }
 }
 
 void
@@ -130,5 +247,7 @@ pci_ide_init()
     iprintf("program_if:      %x\n",    pci_dev->st.prog_if);
 
     ata_init(&ata, &ide);
+    cmd_ata_write(0x400);
+    cmd_ata_read(0x1000);
 }
 

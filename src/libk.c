@@ -11,13 +11,22 @@ strlen(const char *s)
 	return n;
 }
 
-
 /* From musl libc */
 int
 strcmp(const char *l, const char *r)
 {
 	for (; *l==*r && *l; l++, r++);
 	return *(unsigned char *)l - *(unsigned char *)r;
+}
+
+/* From musl libc */
+int
+strncmp(const char *_l, const char *_r, size_t n)
+{
+    const unsigned char *l=(void *)_l, *r=(void *)_r;
+    if (!n--) return 0;
+    for (; *l && *r && n && *l == *r ; l++, r++, n--);
+    return *l - *r;
 }
 
 void *
