@@ -13,7 +13,7 @@ OBJS := src/boot.S
 
 OUT := $(BUILD)/boot.bin
 ISO ?= boot.iso
-ISO_DIR = ./out/iso
+ISO_DIR = $(BUILd)/out/iso
 
 JOBS:=8
 
