@@ -1,21 +1,20 @@
 #!/bin/sh
 
-ROOT=$(dirname $0)/
-IN=$ROOT/pci.ids
-OUT=$ROOT/../../src/pci_db.c
+cd $(dirname $0)
 
-[ -e $OUT ] && exit 0
+tmp=$(mktemp)
 
-wget http://pci-ids.ucw.cz/v2.2/pci.ids -q -O "$IN"
+curl http://pci-ids.ucw.cz/v2.2/pci.ids | ./struct.awk >$tmp
 
-$ROOT/struct.awk < "$IN" > $ROOT/out
-N=$(wc -l $ROOT/out | awk '{print $1}')
+N=$(wc -l $tmp | awk '{print $1}')
 
-echo '#include "defs.h"' > $OUT
-echo '#include "pci.h"' >> $OUT
-echo >> $OUT
-echo "int pci_db_n = $N;">> $OUT
-echo "struct pci_ext_db pci_db[$N] = {" >> $OUT
-cat $ROOT/out >> $OUT
-echo "};" >> $OUT
+echo '#include "defs.h"'
+echo '#include "pci.h"'
+echo
+echo "int pci_db_n = $N;"
+echo "struct pci_ext_db pci_db[$N] = {"
+cat $tmp
+echo "};"
+
+rm $tmp
 

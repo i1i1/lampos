@@ -1,5 +1,4 @@
 #include <stdarg.h>
-#include <limits.h>
 
 #include "kernel.h"
 #include "com.h"

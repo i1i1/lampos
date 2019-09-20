@@ -54,7 +54,7 @@ morph_files() {
 uniq_dirs() {
 	for item in $@; do
 		printf "$BUILD/$(dirname $item)\n"
-	done | sort | uniq
+	done | sort | uniq | tr '\n' ' '
 }
 
 srcs=$(echo $@|tr ' ' '\n'|sort|uniq|tr '\n' ' ')
@@ -80,7 +80,7 @@ all: \$(OUT)
 #
 \$(OUT): \$(OBJS)
 	@printf \$(PRINTF_FMT) LD \$(OUT)
-	\$(CC) \$(CFLAGS) -o \$(OUT) \$(OBJS) \$(LDFLAGS)
+	@\$(CC) \$(CFLAGS) -o \$(OUT) \$(OBJS) \$(LDFLAGS)
 
 ########################
 $(dirs_gen $dirs)
